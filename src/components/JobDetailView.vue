@@ -39,6 +39,7 @@ const pdfUrl = ref<string | null>(null);
 const jobDetails = ref<JobData | null>(null);
 const standardResumes = ref<BaseResume[]>([]);
 const resumesLoadError = ref<string | null>(null);
+const isLoadingResumes = ref(false);
 
 // Load job details and base resumes on mount
 onMounted(async () => {
@@ -47,15 +48,24 @@ onMounted(async () => {
     // const job = await invoke('get_job_details', { jobId: props.id });
     // jobDetails.value = job;
     
-    // Load base resumes from store
+    // Load base resumes from store and keep only those with LaTeX content
+    isLoadingResumes.value = true;
     await resumesStore.loadAllResumes();
-    standardResumes.value = resumesStore.resumes.map((resume) => ({
-      id: resume.id,
-      name: resume.name,
-    }));
+    const withContent: BaseResume[] = [];
+    for (const resume of resumesStore.resumes) {
+      const detail = await resumesStore.getResumeById(resume.id);
+      if (detail.latex_content && detail.latex_content.trim().length > 0) {
+        withContent.push({ id: resume.id, name: resume.name });
+      }
+    }
+    standardResumes.value = withContent;
     if (standardResumes.value.length > 0) {
       selectedStandardResume.value = standardResumes.value[0].id;
     }
+    if (!standardResumes.value.length) {
+      resumesLoadError.value = 'No resume templates with LaTeX content found. Add LaTeX in Resume Templates.';
+    }
+    isLoadingResumes.value = false;
     
     // For now, mock data
     jobDetails.value = {
@@ -66,11 +76,12 @@ onMounted(async () => {
       raw_job_content: 'We are looking for a Senior Rust Developer...'
     };
     
-    if (!standardResumes.value.length) {
-      resumesLoadError.value = 'No resume templates found. Create one in the Resume Templates tab.';
+    if (isLoadingResumes.value) {
+      resumesLoadError.value = null;
     }
   } catch (err: any) {
     error.value = err.toString();
+    isLoadingResumes.value = false;
   } finally {
     isLoading.value = false;
   }
@@ -160,13 +171,14 @@ const goBack = () => {
         <div class="card">
           <h3>Tailor Settings</h3>
           <label>Select Base Resume:</label>
-          <select v-model="selectedStandardResume" class="dropdown">
+          <select v-model="selectedStandardResume" class="dropdown" :disabled="isLoadingResumes">
             <option v-for="resume in standardResumes" :key="resume.id" :value="resume.id">
               {{ resume.name }}
             </option>
           </select>
 
-          <p v-if="resumesLoadError" class="inline-warning">{{ resumesLoadError }}</p>
+          <p v-if="isLoadingResumes" class="inline-warning">Loading resume templates...</p>
+          <p v-else-if="resumesLoadError" class="inline-warning">{{ resumesLoadError }}</p>
 
           <label style="margin-top: 16px;">Custom Instructions (Optional):</label>
           <textarea 

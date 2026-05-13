@@ -13,8 +13,9 @@ export const useJobsStore = defineStore('jobs', () => {
     error.value = null;
     
     try {
+      await settingsStore.loadSettings();
       // Get the decrypted API key from Stronghold
-      const apiKey = await settingsStore.getDecryptedKey();
+      const apiKey = await settingsStore.getDecryptedKey(settingsStore.selectedAiProvider);
       if (!apiKey) throw new Error("API Key not found. Please set it in Settings.");
 
       // Send to Rust backend for AI parsing and DB storage
