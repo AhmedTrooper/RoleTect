@@ -44,7 +44,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::settings::save_model_pref,
             commands::settings::get_model_pref,
-            commands::jobs::parse_and_save_job
+            commands::jobs::parse_and_save_job,
+            commands::jobs::tailor_resume,
+            commands::resumes::get_all_resumes,
+            commands::resumes::get_resume_by_id,
+            commands::resumes::create_new_resume,
+            commands::resumes::update_resume
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

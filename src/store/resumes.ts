@@ -3,18 +3,83 @@ import { ref } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 
 export interface BaseResume {
-  id: string; // Slug
+  id: string;
   name: string;
   category: string;
-  latexContent: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResumeDetail extends BaseResume {
+  latex_content: string;
 }
 
 export const useResumesStore = defineStore('resumes', () => {
-  const baseResumes = ref<BaseResume[]>([]);
-  
-  const loadBaseResumes = async () => {
-    // TODO: Fetch from SQLite
+  const resumes = ref<BaseResume[]>([]);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
+
+  const loadAllResumes = async () => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const data = await invoke<BaseResume[]>('get_all_resumes');
+      resumes.value = data;
+    } catch (err: any) {
+      error.value = err.toString();
+    } finally {
+      isLoading.value = false;
+    }
   };
 
-  return { baseResumes, loadBaseResumes };
+  const getResumeById = async (resumeId: string): Promise<ResumeDetail> => {
+    try {
+      return await invoke<ResumeDetail>('get_resume_by_id', { resume_id: resumeId });
+    } catch (err: any) {
+      error.value = err.toString();
+      throw err;
+    }
+  };
+
+  const createNewResume = async (name: string, category: string, latex_content: string): Promise<string> => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const resumeId = await invoke<string>('create_new_resume', { name, category, latexContent: latex_content });
+      await loadAllResumes(); // Refresh list
+      return resumeId;
+    } catch (err: any) {
+      error.value = err.toString();
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const updateResume = async (resumeId: string, name: string, category: string, latex_content: string): Promise<void> => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      await invoke('update_resume', { resume_id: resumeId, name, category, latexContent: latex_content });
+      await loadAllResumes(); // Refresh list
+    } catch (err: any) {
+      error.value = err.toString();
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  return {
+    resumes,
+    isLoading,
+    error,
+    loadAllResumes,
+    getResumeById,
+    createNewResume,
+    updateResume
+  };
 });

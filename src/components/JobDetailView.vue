@@ -1,62 +1,138 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
+import { useSettingsStore } from '../store/settings';
+import { useRouter } from 'vue-router';
 
-const props = defineProps<{ jobId: number | null }>();
+interface JobData {
+  title: string;
+  company: string;
+  requirements: string[];
+  core_responsibilities: string[];
+  raw_job_content: string;
+}
+
+interface BaseResume {
+  id: string;
+  name: string;
+}
+
+const router = useRouter();
+const settingsStore = useSettingsStore();
+
+const props = defineProps<{ id: string }>();
 const emit = defineEmits(['go-back']);
 
 // State
+const isLoading = ref(true);
 const isGenerating = ref(false);
 const isCompilingPDF = ref(false);
-const selectedStandardResume = ref(1);
+const error = ref<string | null>(null);
+const selectedStandardResume = ref<string | null>(null);
+const customInstruction = ref('');
 const generatedLatex = ref('');
 const pdfUrl = ref<string | null>(null);
 
-// Mock Data (Later: fetch from SQLite using props.jobId)
-const jobDetails = ref({
-  title: 'Senior Rust Developer',
-  company: 'TechCorp',
-  requirements: ['Rust', 'Tauri', 'SQLite', 'System Architecture']
+// Data
+const jobDetails = ref<JobData | null>(null);
+const standardResumes = ref<BaseResume[]>([]);
+
+// Load job details and base resumes on mount
+onMounted(async () => {
+  try {
+    // TODO: Fetch job details from backend
+    // const job = await invoke('get_job_details', { jobId: props.id });
+    // jobDetails.value = job;
+    
+    // TODO: Fetch base resumes from backend
+    // const resumes = await invoke('get_base_resumes');
+    // standardResumes.value = resumes;
+    // if (resumes.length > 0) selectedStandardResume.value = resumes[0].id;
+    
+    // For now, mock data
+    jobDetails.value = {
+      title: 'Senior Rust Developer',
+      company: 'TechCorp',
+      requirements: ['Rust', 'Tauri', 'SQLite', 'System Architecture'],
+      core_responsibilities: ['Design systems', 'Lead team', 'Code review'],
+      raw_job_content: 'We are looking for a Senior Rust Developer...'
+    };
+    
+    standardResumes.value = [
+      { id: 'base_1', name: 'Software Engineer Base' },
+      { id: 'base_2', name: 'Frontend Heavy Base' }
+    ];
+    selectedStandardResume.value = 'base_1';
+  } catch (err: any) {
+    error.value = err.toString();
+  } finally {
+    isLoading.value = false;
+  }
 });
 
-const standardResumes = ref([
-  { id: 1, name: 'Software Engineer Base' },
-  { id: 2, name: 'Frontend Heavy Base' }
-]);
-
-// Trigger AI Generation (The rig crate LangChain vibe)
+// Trigger AI Generation
 const generateResume = async () => {
-  isGenerating.value = true;
+  if (!jobDetails.value || !selectedStandardResume.value) return;
   
-  // TODO: Call Tauri backend: await invoke('tailor_resume', { jobId: props.jobId, resumeId: selectedStandardResume.value })
-  setTimeout(() => {
-    generatedLatex.value = `\\documentclass{article}\n\\begin{document}\nHello World - Tailored for ${jobDetails.value.company}\n\\end{document}`;
+  isGenerating.value = true;
+  error.value = null;
+  
+  try {
+    const apiKey = await settingsStore.getDecryptedKey();
+    if (!apiKey) throw new Error("API Key not found. Please set it in Settings.");
+    
+    const tailoredId = await invoke<string>('tailor_resume', {
+      api_key: apiKey,
+      job_id: props.id,
+      base_resume_id: selectedStandardResume.value,
+      custom_instruction: customInstruction.value || null,
+    });
+    
+    // TODO: Fetch the generated LaTeX content by tailored_id
+    // For now, display a placeholder
+    generatedLatex.value = `% Tailored Resume (ID: ${tailoredId})\n\\documentclass{article}\n\\begin{document}\n% Content will be populated after fetching from DB\n\\end{document}`;
+  } catch (err: any) {
+    error.value = err.toString();
+  } finally {
     isGenerating.value = false;
-  }, 1500); // Mock delay
+  }
 };
 
-// Trigger Tectonic PDF Compilation
+// Trigger PDF Compilation (stub for now)
 const compilePdf = async () => {
   if (!generatedLatex.value) return;
   isCompilingPDF.value = true;
   
-  // TODO: Call Tauri backend: const bytes = await invoke('compile_resume_to_pdf', { latexCode: generatedLatex.value })
-  // Mocking PDF creation for now:
-  setTimeout(() => {
-    isCompilingPDF.value = false;
-    // In production, you will create a Blob URL from the returned Uint8Array here
-  }, 1000);
+  try {
+    // TODO: Call Tauri backend: const bytes = await invoke('compile_resume_to_pdf', { latexCode: generatedLatex.value })
+    // Mocking PDF creation for now:
+    setTimeout(() => {
+      isCompilingPDF.value = false;
+    }, 1000);
+  } catch (err: any) {
+    error.value = err.toString();
+  }
+};
+
+const goBack = () => {
+  router.push('/');
 };
 </script>
 
 <template>
-  <div class="workspace">
+  <div class="workspace" v-if="!isLoading">
     <header class="workspace-header">
-      <button class="back-btn" @click="emit('go-back')">← Back to Jobs</button>
+      <button class="back-btn" @click="goBack">← Back to Jobs</button>
       <div>
-        <h1>{{ jobDetails.title }}</h1>
-        <p class="company">@ {{ jobDetails.company }}</p>
+        <h1>{{ jobDetails?.title }}</h1>
+        <p class="company">@ {{ jobDetails?.company }}</p>
       </div>
     </header>
+
+    <div class="error-banner" v-if="error">
+      <span>{{ error }}</span>
+      <button @click="error = null">✕</button>
+    </div>
 
     <div class="split-view">
       
@@ -64,7 +140,14 @@ const compilePdf = async () => {
         <div class="card">
           <h3>Job Context</h3>
           <ul class="skills-list">
-            <li v-for="skill in jobDetails.requirements" :key="skill">{{ skill }}</li>
+            <li v-for="skill in jobDetails?.requirements" :key="skill">{{ skill }}</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Core Responsibilities</h3>
+          <ul class="skills-list">
+            <li v-for="resp in jobDetails?.core_responsibilities" :key="resp">{{ resp }}</li>
           </ul>
         </div>
 
@@ -77,7 +160,15 @@ const compilePdf = async () => {
             </option>
           </select>
 
-          <button class="primary-btn mt-4" @click="generateResume" :disabled="isGenerating">
+          <label style="margin-top: 16px;">Custom Instructions (Optional):</label>
+          <textarea 
+            v-model="customInstruction" 
+            class="instruction-input" 
+            placeholder="Add any custom tailoring instructions..."
+            spellcheck="false"
+          ></textarea>
+
+          <button class="primary-btn mt-4" @click="generateResume" :disabled="isGenerating || !selectedStandardResume">
             {{ isGenerating ? '✨ AI is Tailoring...' : '✨ Generate Tailored Resume' }}
           </button>
         </div>
@@ -138,4 +229,11 @@ const compilePdf = async () => {
 
 .pdf-viewer { flex-grow: 1; border: none; border-radius: 5px; background-color: white; margin-top: 10px; }
 .mt-4 { margin-top: 1rem; }
+
+.error-banner { background-color: rgba(255, 80, 80, 0.1); border: 1px solid rgba(255, 80, 80, 0.3); border-radius: 6px; padding: 12px 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+.error-banner span { color: #ff5555; font-size: 0.9rem; }
+.error-banner button { background: none; border: none; color: #ff5555; cursor: pointer; font-size: 1rem; }
+
+.instruction-input { width: 100%; margin-top: 8px; padding: 10px; background-color: #1e1e2e; color: #cdd6f4; border: 1px solid #45475a; border-radius: 5px; font-family: monospace; font-size: 0.85rem; resize: vertical; max-height: 120px; }
+.instruction-input:focus { outline: none; border-color: #cba6f7; box-shadow: 0 0 0 1px rgba(203, 166, 247, 0.3); }
 </style>

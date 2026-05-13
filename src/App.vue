@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router';
-
-const route = useRoute();
-
 const tabs = [
   { path: '/', label: 'Saved Jobs', icon: '🏠' },
+  { path: '/resumes', label: 'Resume Templates', icon: '📄' },
   { path: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 </script>
