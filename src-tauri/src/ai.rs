@@ -1,4 +1,4 @@
-use rig::providers::openai::Client;
+use rig::providers::gemini::Client;
 use rig::client::CompletionClient;
 use rig::completion::Prompt;
 use serde::{Deserialize, Serialize};
@@ -16,11 +16,15 @@ pub async fn parse_job_description(api_key: &str, raw_jd: &str) -> Result<JobDet
     // FIX: Unpack the Result. If Client::new fails, it safely returns the error as a String.
     let client = Client::new(api_key)
         .map_err(|e| format!("Failed to initialize AI client: {}", e))?;
+        // println!("Password is : {}", api_key);
+
+        
     
     // Now 'client' is safely unwrapped, and we can build the extractor
-    let extractor = client.extractor::<JobDetails>("gpt-4o").build();
+    let extractor = client.extractor::<JobDetails>("gemini-3-flash-preview").build();
         
     let result = extractor.extract(raw_jd).await.map_err(|e| format!("AI Parsing Error: {}", e))?;
+    println!("Extracted Job Details: {:?}", &result);
     
     Ok(result)
 }
@@ -33,6 +37,7 @@ pub async fn tailor_latex_for_job(
 ) -> Result<String, String> {
     let client = Client::new(api_key)
         .map_err(|e| format!("Failed to initialize AI client: {}", e))?;
+        // println!("Tailor function is called!");
 
     let system_prompt = r#"You are an expert resume tailoring AI. Your task is to take a base LaTeX resume template and tailor it to match a specific job description. 
     
@@ -64,7 +69,7 @@ Please tailor the resume to match the job description. Return only the modified 
     );
 
     let agent = client
-        .agent("gpt-4o")
+        .agent("gemini-3-flash-preview")
         .preamble(system_prompt)
         .build();
 
@@ -72,6 +77,8 @@ Please tailor the resume to match the job description. Return only the modified 
         .prompt(&user_prompt)
         .await
         .map_err(|e| format!("AI Tailoring Error: {}", e))?;
+
+        println!("\n\n\nTailored LaTeX Resume:\n{}\n\n\n----->", &response);
 
     Ok(response)
 }

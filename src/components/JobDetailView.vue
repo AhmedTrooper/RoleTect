@@ -97,18 +97,20 @@ const generateResume = async () => {
   try {
     const apiKey = await settingsStore.getDecryptedKey();
     if (!apiKey) throw new Error("API Key not found. Please set it in Settings.");
+    // console.log(apiKey)
     
     const tailoredId = await invoke<string>('tailor_resume', {
-      api_key: apiKey,
-      job_id: props.id,
-      base_resume_id: selectedStandardResume.value,
-      custom_instruction: customInstruction.value || null,
+      apiKey: apiKey,
+      jobId: props.id,
+      baseResumeId: selectedStandardResume.value,
+      customInstruction: customInstruction.value || null,
     });
     
     // TODO: Fetch the generated LaTeX content by tailored_id
     // For now, display a placeholder
     generatedLatex.value = `% Tailored Resume (ID: ${tailoredId})\n\\documentclass{article}\n\\begin{document}\n% Content will be populated after fetching from DB\n\\end{document}`;
   } catch (err: any) {
+    console.log("Error found")
     error.value = err.toString();
   } finally {
     isGenerating.value = false;
