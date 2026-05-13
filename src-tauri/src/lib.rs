@@ -49,7 +49,8 @@ pub fn run() {
             commands::resumes::get_all_resumes,
             commands::resumes::get_resume_by_id,
             commands::resumes::create_new_resume,
-            commands::resumes::update_resume
+            commands::resumes::update_resume,
+            commands::resumes::delete_resume
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

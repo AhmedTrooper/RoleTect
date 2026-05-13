@@ -11,6 +11,7 @@ const props = defineProps<{ id: string }>();
 const isLoading = ref(true);
 const isEditing = ref(false);
 const isSaving = ref(false);
+const isDeleting = ref(false);
 const error = ref<string | null>(null);
 
 const resume = ref<ResumeDetail | null>(null);
@@ -76,6 +77,24 @@ const handleSave = async () => {
   }
 };
 
+const handleDelete = async () => {
+  if (!resume.value) return;
+  const confirmed = window.confirm('Delete this resume template? This cannot be undone.');
+  if (!confirmed) return;
+
+  isDeleting.value = true;
+  error.value = null;
+
+  try {
+    await resumesStore.deleteResume(resume.value.id);
+    router.push('/resumes');
+  } catch (err: any) {
+    error.value = err.toString();
+  } finally {
+    isDeleting.value = false;
+  }
+};
+
 const hasLatexContent = () => {
   const content = resume.value?.latex_content || '';
   return content.trim().length > 0;
@@ -105,6 +124,9 @@ const hasLatexContent = () => {
       </div>
       <div class="actions-top">
         <button v-if="!isEditing" class="btn-edit" @click="toggleEditMode">✏️ Edit</button>
+        <button v-if="!isEditing" class="btn-delete" @click="handleDelete" :disabled="isDeleting">
+          {{ isDeleting ? 'Deleting...' : 'Delete' }}
+        </button>
         <div v-else class="edit-actions">
           <button class="btn-cancel" @click="toggleEditMode">Cancel</button>
           <button class="btn-save" @click="handleSave" :disabled="isSaving">
@@ -278,6 +300,26 @@ const hasLatexContent = () => {
   font-weight: 700;
   cursor: pointer;
   transition: 0.2s;
+}
+
+.btn-delete {
+  background: #fff0ef;
+  color: var(--warning);
+  border: 1px solid rgba(180, 35, 24, 0.2);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background: #ffe5e2;
+}
+
+.btn-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-cancel {

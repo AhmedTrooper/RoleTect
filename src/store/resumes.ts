@@ -77,6 +77,21 @@ export const useResumesStore = defineStore('resumes', () => {
     }
   };
 
+  const deleteResume = async (resumeId: string): Promise<void> => {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      await invoke('delete_resume', { args: { resumeId } });
+      await loadAllResumes();
+    } catch (err: any) {
+      error.value = err.toString();
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     resumes,
     isLoading,
@@ -84,6 +99,7 @@ export const useResumesStore = defineStore('resumes', () => {
     loadAllResumes,
     getResumeById,
     createNewResume,
-    updateResume
+    updateResume,
+    deleteResume
   };
 });

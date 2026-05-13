@@ -39,6 +39,12 @@ pub struct UpdateResumeArgs {
     pub latex_content: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteResumeArgs {
+    pub resume_id: String,
+}
+
 #[tauri::command]
 pub fn get_all_resumes(state: State<'_, AppState>) -> Result<Vec<ResumeItem>, String> {
     let mut db_guard = state.db.lock().map_err(|e| format!("Mutex error: {}", e))?;
@@ -130,6 +136,22 @@ pub fn update_resume(
             [&args.name, &args.category, &args.latex_content, &args.resume_id],
         ).map_err(|e| format!("Database error: {}", e))?;
         
+        Ok(())
+    } else {
+        Err("Database connection lost".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn delete_resume(state: State<'_, AppState>, args: DeleteResumeArgs) -> Result<(), String> {
+    let mut db_guard = state.db.lock().map_err(|e| format!("Mutex error: {}", e))?;
+
+    if let Some(conn) = db_guard.as_mut() {
+        conn.execute(
+            "DELETE FROM base_resumes WHERE id = ?1",
+            [&args.resume_id],
+        ).map_err(|e| format!("Database error: {}", e))?;
+
         Ok(())
     } else {
         Err("Database connection lost".to_string())
