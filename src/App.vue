@@ -1,160 +1,229 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import { ref, computed } from 'vue';
+import HomeTab from './components/HomeTab.vue';
+import SettingsTab from './components/SettingsTab.vue';
+import JobDetailView from './components/JobDetailView.vue';
 
-const greetMsg = ref("");
-const name = ref("");
+const tabs = [
+  { id: 'home', label: 'Saved Jobs', icon: '🏠' },
+  { id: 'settings', label: 'Settings', icon: '⚙️' },
+];
 
-async function greet() {
-  // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  greetMsg.value = await invoke("greet", { name: name.value });
-}
+const activeTabId = ref('home');
+const selectedJobId = ref<number | null>(null);
+
+const openJobDetails = (id: number) => {
+  selectedJobId.value = id;
+  activeTabId.value = 'job-detail';
+};
+
+const activeComponent = computed(() => {
+  if (activeTabId.value === 'job-detail') return JobDetailView;
+  switch (activeTabId.value) {
+    case 'home': return HomeTab;
+    case 'settings': return SettingsTab;
+    default: return HomeTab;
+  }
+});
 </script>
 
 <template>
-  <main class="container">
-    <h1>Welcome to Tauri + Vue</h1>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="logo-container">
+        <div class="logo-icon"></div>
+      </div>
+      
+      <nav class="nav-menu">
+        <button 
+          v-for="tab in tabs" :key="tab.id"
+          @click="activeTabId = tab.id; selectedJobId = null" 
+          :class="['nav-button', { active: activeTabId === tab.id }]"
+        >
+          <span class="icon">{{ tab.icon }}</span> 
+          <span class="tab-label">{{ tab.label }}</span>
+        </button>
+      </nav>
+    </aside>
 
-    <div class="row">
-      <a href="https://vite.dev" target="_blank">
-        <img src="/vite.svg" class="logo vite" alt="Vite logo" />
-      </a>
-      <a href="https://tauri.app" target="_blank">
-        <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
-      </a>
-      <a href="https://vuejs.org/" target="_blank">
-        <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-      </a>
-    </div>
-    <p>Click on the Tauri, Vite, and Vue logos to learn more.</p>
-
-    <form class="row" @submit.prevent="greet">
-      <input id="greet-input" v-model="name" placeholder="Enter a name..." />
-      <button type="submit">Greet</button>
-    </form>
-    <p>{{ greetMsg }}</p>
-  </main>
+    <main class="content-area">
+      <div class="glass-container">
+        <component 
+          :is="activeComponent" 
+          :jobId="selectedJobId" 
+          @open-job="openJobDetails"
+          @go-back="activeTabId = 'home'"
+        />
+      </div>
+    </main>
+  </div>
 </template>
 
 <style scoped>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
+/* COLOR PALETTE: Deep Marine & Teal/Cyan */
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #060e1a; 
+  background-image: radial-gradient(circle at top right, #0a1f3d, #060e1a);
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
 }
 
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #249b73);
-}
-
-</style>
-<style>
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
+/* --- SLIM SIDEBAR --- */
+.sidebar {
+  width: 80px; /* Shrunk from 260px */
+  background: rgba(13, 22, 43, 0.6);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(0, 245, 212, 0.1);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  text-align: center;
+  align-items: center; /* Center everything horizontally */
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+  z-index: 10;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
+.logo-container {
+  padding: 25px 0;
   display: flex;
   justify-content: center;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #00F5D4, #0E79B2);
   border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.5);
+}
+
+/* --- NAVIGATION --- */
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  gap: 15px;
+  width: 100%;
+  align-items: center;
+}
+
+.nav-button {
+  position: relative; /* Crucial for absolute tooltip positioning */
+  background: transparent;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
+  color: #94a3b8;
+  padding: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+.nav-button:hover {
+  background: rgba(14, 121, 178, 0.1);
 }
 
-input,
-button {
-  outline: none;
+.nav-button.active {
+  background: linear-gradient(135deg, rgba(0, 245, 212, 0.15), rgba(14, 121, 178, 0.1));
+  border: 1px solid rgba(0, 245, 212, 0.4);
+  box-shadow: inset 0 0 10px rgba(0, 245, 212, 0.1);
 }
 
-#greet-input {
-  margin-right: 5px;
+.nav-button .icon {
+  font-size: 1.4rem;
+  filter: grayscale(100%) brightness(150%);
+  transition: all 0.3s ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
+.nav-button.active .icon {
+  filter: none;
+  transform: scale(1.1); /* Slight pop effect when active */
 }
 
+/* --- TOOLTIP LOGIC --- */
+.tab-label {
+  position: absolute;
+  left: 100%; /* Push it completely to the right of the button */
+  margin-left: 15px; /* Add a gap between button and tooltip */
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(0, 245, 212, 0.3);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #00F5D4;
+  white-space: nowrap;
+  
+  /* Hidden by default */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Tooltip Arrow */
+.tab-label::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  margin-top: -6px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent rgba(0, 245, 212, 0.3) transparent transparent;
+}
+
+/* Show tooltip on hover */
+.nav-button:hover .tab-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* --- MAIN CONTENT AREA --- */
+.content-area {
+  flex-grow: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.glass-container {
+  flex-grow: 1;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
+::-webkit-scrollbar-thumb { background: rgba(14, 121, 178, 0.5); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 245, 212, 0.5); }
+</style>
+
+<style>
+/* UNSCOPED global styles to reset the browser defaults */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; 
+}
+* { box-sizing: border-box; }
 </style>
