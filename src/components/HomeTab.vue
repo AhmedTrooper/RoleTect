@@ -24,6 +24,10 @@ const refreshSettings = async () => {
   settingsError.value = '';
   try {
     await settingsStore.loadSettings();
+    // Re-check key status for the now-active provider.
+    // loadSettings() updates selectedAiProvider from SQLite, but
+    // hasSecureKey may still reflect the old provider — re-sync it.
+    await settingsStore.loadProviderKeyStatus(settingsStore.selectedAiProvider);
   } catch (err: any) {
     settingsError.value = err?.message || 'Failed to load settings.';
   } finally {
@@ -35,12 +39,13 @@ onMounted(async () => {
   await refreshSettings();
 });
 
+// Refresh every time the user navigates back to the home route.
+// No path guard needed — this watch only triggers on path changes
+// and onMounted already handles the initial load.
 watch(
   () => route.fullPath,
-  async (path) => {
-    if (path === '/') {
-      await refreshSettings();
-    }
+  async () => {
+    await refreshSettings();
   }
 );
 
