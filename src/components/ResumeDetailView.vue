@@ -287,7 +287,21 @@ const hasLatexContent = () => {
       
       <div v-else-if="!hasLatexContent()" class="empty-latex">
         <p>No LaTeX content yet.</p>
-        <button class="btn-edit" @click="toggleEditMode"><Edit :size="16" /> Add LaTeX</button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'add-latex'" @mouseleave="activeTooltip = null">
+          <button class="btn-edit" @click="toggleEditMode"><Edit :size="16" /></button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'add-latex'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="flying-message"
+            >
+              Add LaTeX
+            </Motion>
+          </AnimatePresence>
+        </div>
       </div>
       
       <pre v-else class="latex-preview">{{ resume?.latex_content }}</pre>
@@ -298,10 +312,39 @@ const hasLatexContent = () => {
     </div>
 
     <div v-if="isEditing" class="edit-bar">
-      <button class="btn-cancel" @click="toggleEditMode">Cancel</button>
-      <button class="btn-save" @click="handleSave" :disabled="isSaving">
-        {{ isSaving ? 'Saving...' : 'Save Changes' }}
-      </button>
+      <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'cancel-edit-footer'" @mouseleave="activeTooltip = null">
+        <button class="btn-cancel" @click="toggleEditMode"><X :size="16" /></button>
+        <AnimatePresence>
+          <Motion
+            v-if="activeTooltip === 'cancel-edit-footer'"
+            :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+            :animate="{ opacity: 1, y: 0, scale: 1 }"
+            :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+            :transition="{ duration: 0.15 }"
+            class="flying-message"
+          >
+            Cancel Changes
+          </Motion>
+        </AnimatePresence>
+      </div>
+      <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'save-template-footer'" @mouseleave="activeTooltip = null">
+        <button class="btn-save" @click="handleSave" :disabled="isSaving">
+          <Save v-if="!isSaving" :size="16" />
+          <RotateCw v-else :size="16" class="spinner" />
+        </button>
+        <AnimatePresence>
+          <Motion
+            v-if="activeTooltip === 'save-template-footer'"
+            :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+            :animate="{ opacity: 1, y: 0, scale: 1 }"
+            :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+            :transition="{ duration: 0.15 }"
+            class="flying-message"
+          >
+            Save Template
+          </Motion>
+        </AnimatePresence>
+      </div>
     </div>
   </div>
 

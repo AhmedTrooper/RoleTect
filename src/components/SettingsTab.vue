@@ -245,7 +245,7 @@ const handleSave = async () => {
             @click="syncFromStore" 
             :disabled="isSaving"
           >
-            <RotateCcw :size="16" /> Discard Changes
+            <RotateCcw :size="16" />
           </button>
           <AnimatePresence>
             <Motion
@@ -256,7 +256,7 @@ const handleSave = async () => {
               :transition="{ duration: 0.15 }"
               class="flying-message"
             >
-              Revert to last saved
+              Discard Changes
             </Motion>
           </AnimatePresence>
         </div>
@@ -267,7 +267,8 @@ const handleSave = async () => {
             @click="handleSave" 
             :disabled="isSaving || (providerInput === store.selectedAiProvider && modelInput === store.selectedAiModel && !apiKeyInput)"
           >
-            <Save :size="16" /> {{ isSaving ? 'Securing...' : 'Save Configuration' }}
+            <Save v-if="!isSaving" :size="16" />
+            <RotateCcw v-else :size="16" class="spinner" />
           </button>
           <AnimatePresence>
             <Motion
@@ -278,7 +279,7 @@ const handleSave = async () => {
               :transition="{ duration: 0.15 }"
               class="flying-message"
             >
-              Persist settings to vault
+              Save Configuration
             </Motion>
           </AnimatePresence>
         </div>
@@ -395,11 +396,25 @@ label {
 .button-group { display: flex; gap: 12px; }
 
 .btn-primary, .btn-secondary {
-  padding: 12px 24px;
+  padding: 12px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
   transition: 0.2s;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .btn-primary { background: var(--accent); color: white; border: none; }

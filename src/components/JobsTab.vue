@@ -173,28 +173,112 @@ const getStatusClass = (status: string) => {
       <div class="header-actions">
         <!-- Default Actions -->
         <template v-if="!isSelectionMode">
-          <button class="btn-secondary" @click="isSelectionMode = true" title="Enable selection mode">
-            <Settings2 :size="16" /> Selection Mode
-          </button>
-          <button class="btn-danger-outline" @click="deleteAllJobs" title="Delete all jobs">
-            <Trash2 :size="16" /> Delete All
-          </button>
-          <button class="btn-primary" @click="$router.push('/parse')">
-            <Plus :size="18" /> New Application
-          </button>
+          <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'selection-mode'" @mouseleave="activeTooltip = null">
+            <button class="btn-secondary" @click="isSelectionMode = true">
+              <Settings2 :size="16" />
+            </button>
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'selection-mode'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                :transition="{ duration: 0.15 }"
+                class="flying-message"
+              >
+                Selection Mode
+              </Motion>
+            </AnimatePresence>
+          </div>
+          <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'delete-all'" @mouseleave="activeTooltip = null">
+            <button class="btn-danger-outline" @click="deleteAllJobs">
+              <Trash2 :size="16" />
+            </button>
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'delete-all'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                :transition="{ duration: 0.15 }"
+                class="flying-message delete-tooltip"
+              >
+                Delete All
+              </Motion>
+            </AnimatePresence>
+          </div>
+          <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'new-app'" @mouseleave="activeTooltip = null">
+            <button class="btn-primary" @click="$router.push('/parse')">
+              <Plus :size="18" />
+            </button>
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'new-app'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                :transition="{ duration: 0.15 }"
+                class="flying-message"
+              >
+                New Application
+              </Motion>
+            </AnimatePresence>
+          </div>
         </template>
 
         <!-- Selection Mode Actions -->
         <template v-else>
-          <button class="btn-secondary" @click="selectAllVisible">
-            <Check :size="16" /> Select All
-          </button>
-          <button v-if="selectedJobs.size > 0" class="btn-delete-batch" @click="deleteSelectedJobs">
-            <Trash2 :size="16" /> Delete Selected ({{ selectedJobs.size }})
-          </button>
-          <button class="btn-primary" @click="exitSelectionMode">
-            <X :size="16" /> Done
-          </button>
+          <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'select-all'" @mouseleave="activeTooltip = null">
+            <button class="btn-secondary" @click="selectAllVisible">
+              <Check :size="16" />
+            </button>
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'select-all'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                :transition="{ duration: 0.15 }"
+                class="flying-message"
+              >
+                Select All
+              </Motion>
+            </AnimatePresence>
+          </div>
+          <div class="btn-tooltip-wrapper" v-if="selectedJobs.size > 0" @mouseenter="activeTooltip = 'delete-batch'" @mouseleave="activeTooltip = null">
+            <button class="btn-delete-batch" @click="deleteSelectedJobs">
+              <Trash2 :size="16" />
+            </button>
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'delete-batch'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                :transition="{ duration: 0.15 }"
+                class="flying-message delete-tooltip"
+              >
+                Delete Selected ({{ selectedJobs.size }})
+              </Motion>
+            </AnimatePresence>
+          </div>
+          <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'exit-selection'" @mouseleave="activeTooltip = null">
+            <button class="btn-primary" @click="exitSelectionMode">
+              <X :size="16" />
+            </button>
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'exit-selection'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                :transition="{ duration: 0.15 }"
+                class="flying-message"
+              >
+                Done
+              </Motion>
+            </AnimatePresence>
+          </div>
         </template>
       </div>
     </header>
@@ -365,31 +449,33 @@ const getStatusClass = (status: string) => {
 .header-actions { display: flex; gap: 12px; align-items: center; }
 
 .btn-primary, .btn-secondary, .btn-danger-outline, .btn-delete-batch {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  padding: 0;
+}
+
+.btn-tooltip-wrapper {
+  position: relative;
+  display: flex;
 }
 
 .btn-primary {
   background: var(--accent);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
 }
 
 .btn-secondary {
   background: var(--surface-soft);
   color: var(--ink);
   border: 1px solid var(--line);
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
 }
 
 .btn-secondary:hover { background: var(--surface); border-color: var(--accent); }
@@ -398,11 +484,6 @@ const getStatusClass = (status: string) => {
   background: transparent;
   color: var(--warning);
   border: 1px solid var(--warning);
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
 }
 
 .btn-danger-outline:hover { background: var(--warning); color: white; }
@@ -411,11 +492,6 @@ const getStatusClass = (status: string) => {
   background: var(--warning);
   color: white;
   border: none;
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
 }
 
 .btn-delete-batch:hover { background: #e63946; }

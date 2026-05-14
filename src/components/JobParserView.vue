@@ -2,12 +2,16 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useJobsStore } from '../store/jobs';
-import { Motion } from 'motion-v';
+import { Motion, AnimatePresence } from 'motion-v';
+import { ArrowLeft, Cpu, RotateCw } from '@lucide/vue';
 
 const router = useRouter();
 const jobsStore = useJobsStore();
 const rawJobDescription = ref('');
 const jobUrl = ref('');
+
+// Tooltip State
+const activeTooltip = ref<string | null>(null);
 
 const handleParse = async () => {
   if (!rawJobDescription.value.trim()) return;
@@ -24,7 +28,21 @@ const handleParse = async () => {
 <template>
   <div class="parser-container">
     <header class="header">
-      <button class="back-btn" @click="router.push('/')">←</button>
+      <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'back'" @mouseleave="activeTooltip = null">
+        <button class="back-btn" @click="router.push('/')"><ArrowLeft :size="16" /></button>
+        <AnimatePresence>
+          <Motion
+            v-if="activeTooltip === 'back'"
+            :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+            :animate="{ opacity: 1, y: 0, scale: 1 }"
+            :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+            :transition="{ duration: 0.15 }"
+            class="flying-message header-tooltip"
+          >
+            Back to Home
+          </Motion>
+        </AnimatePresence>
+      </div>
       <h2>NEW APPLICATION</h2>
     </header>
 
@@ -61,19 +79,32 @@ const handleParse = async () => {
           {{ jobsStore.error }}
         </div>
 
-        <button 
-          class="btn-primary" 
-          @click="handleParse" 
-          :disabled="jobsStore.isLoading || !rawJobDescription"
-        >
-          <Motion
-            v-if="jobsStore.isLoading"
-            :animate="{ rotate: 360 }"
-            :transition="{ repeat: Infinity, duration: 1, ease: 'linear' }"
-            class="loader"
-          >⚙️</Motion>
-          <span v-else>RUN EXTRACTION →</span>
-        </button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'run-extraction'" @mouseleave="activeTooltip = null">
+          <button 
+            class="btn-primary w-full" 
+            @click="handleParse" 
+            :disabled="jobsStore.isLoading || !rawJobDescription"
+          >
+            <RotateCw
+              v-if="jobsStore.isLoading"
+              :size="16"
+              class="spinner"
+            />
+            <Cpu v-else :size="16" />
+          </button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'run-extraction'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="flying-message"
+            >
+              {{ jobsStore.isLoading ? 'PARSING...' : 'RUN EXTRACTION' }}
+            </Motion>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   </div>
@@ -99,8 +130,44 @@ const handleParse = async () => {
 
 .header h2 { font-size: 0.65rem; color: var(--muted); margin: 0; letter-spacing: 0.05em; }
 
-.back-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.2rem; padding: 0 4px; }
+.back-btn { background: none; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
 .back-btn:hover { color: var(--ink); }
+
+.btn-tooltip-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.flying-message {
+  position: absolute;
+  bottom: 140%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.flying-message::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--accent);
+}
+
+.header-tooltip { bottom: auto; top: 140%; }
+.header-tooltip::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: var(--accent); }
 
 .workspace {
   flex: 1;
@@ -189,7 +256,16 @@ label {
 }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.loader { font-size: 1rem; }
+.w-full { width: 100%; }
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 @media (max-width: 960px) {
   .workspace { flex-direction: column; }

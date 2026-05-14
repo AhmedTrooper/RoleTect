@@ -3,8 +3,9 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useSettingsStore } from '../store/settings';
 import { useJobsStore, Job } from '../store/jobs';
+import { Motion, AnimatePresence } from 'motion-v';
 
-import { Activity } from '@lucide/vue';
+import { Activity, Plus, FileText, LayoutGrid } from '@lucide/vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -12,6 +13,9 @@ const settingsStore = useSettingsStore();
 const jobsStore = useJobsStore();
 const settingsError = ref('');
 const isLoadingSettings = ref(false);
+
+// Tooltip State
+const activeTooltip = ref<string | null>(null);
 
 const savedJobs = ref<Job[]>([]);
 
@@ -55,15 +59,57 @@ watch(() => route.fullPath, async () => {
       </p>
 
       <div class="actions">
-        <button class="btn-primary" @click="$router.push('/parse')">New Application</button>
-        <button class="btn-secondary" @click="$router.push('/resumes')">Manage Templates</button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'new-app'" @mouseleave="activeTooltip = null">
+          <button class="btn-primary" @click="$router.push('/parse')"><Plus :size="18" /></button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'new-app'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="flying-message"
+            >
+              New Application
+            </Motion>
+          </AnimatePresence>
+        </div>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'templates'" @mouseleave="activeTooltip = null">
+          <button class="btn-secondary" @click="$router.push('/resumes')"><FileText :size="18" /></button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'templates'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="flying-message"
+            >
+              Manage Templates
+            </Motion>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
 
     <div class="recent-section">
       <div class="section-header">
         <h3>RECENT APPLICATIONS</h3>
-        <button class="link-btn" @click="$router.push('/jobs')">ALL APPLICATIONS</button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'all-jobs'" @mouseleave="activeTooltip = null">
+          <button class="link-btn" @click="$router.push('/jobs')"><LayoutGrid :size="18" /></button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'all-jobs'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="flying-message list-tooltip"
+            >
+              All Applications
+            </Motion>
+          </AnimatePresence>
+        </div>
       </div>
 
       <div v-if="savedJobs.length === 0" class="empty-state">
@@ -127,9 +173,58 @@ watch(() => route.fullPath, async () => {
 
 .actions { display: flex; gap: 12px; }
 
+.btn-tooltip-wrapper {
+  position: relative;
+  display: flex;
+}
+
+.flying-message {
+  position: absolute;
+  bottom: 140%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.flying-message::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--accent);
+}
+
+.list-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.list-tooltip::after {
+  left: auto;
+  right: 8px;
+  transform: none;
+}
+
 .btn-primary, .btn-secondary {
-  padding: 6px 16px;
-  border-radius: var(--radius-md);
+  padding: 10px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;

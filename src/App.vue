@@ -62,7 +62,6 @@ const handleExternalClick = (url: string) => {
               </Motion>
             </AnimatePresence>
           </div>
-          <span class="nav-label">{{ tab.label }}</span>
         </router-link>
 
         <div class="nav-divider"></div>
@@ -90,7 +89,6 @@ const handleExternalClick = (url: string) => {
               </Motion>
             </AnimatePresence>
           </div>
-          <span class="nav-label">{{ link.label }}</span>
         </button>
       </nav>
     </aside>
@@ -145,15 +143,11 @@ const handleExternalClick = (url: string) => {
 
 .nav-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   padding: 8px 0;
   color: var(--muted);
   text-decoration: none;
-  font-size: 0.65rem;
-  font-weight: 500;
   transition: 0.15s;
   background: none;
   border: none;

@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useResumesStore } from '../store/resumes';
-import { Plus, Tag, Calendar, Hash, FileText, X, Info } from '@lucide/vue';
+import { Plus, Tag, Calendar, Hash, FileText, X, Info, Save, RotateCw } from '@lucide/vue';
 import { Motion, AnimatePresence } from 'motion-v';
 
 const router = useRouter();
@@ -65,7 +65,7 @@ const handleCreateResume = async () => {
       </div>
       <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'new-template'" @mouseleave="activeTooltip = null">
         <button class="btn-primary" @click="toggleNewForm">
-          <Plus :size="18" /> New Template
+          <Plus :size="18" />
         </button>
         <AnimatePresence>
           <Motion
@@ -76,7 +76,7 @@ const handleCreateResume = async () => {
             :transition="{ duration: 0.15 }"
             class="flying-message"
           >
-            Create base CV
+            New Template
           </Motion>
         </AnimatePresence>
       </div>
@@ -115,9 +115,24 @@ const handleCreateResume = async () => {
         </div>
 
         <div class="form-actions">
-          <button class="btn-save" @click="handleCreateResume" :disabled="isCreating || !newResumeName || !newResumeCategory">
-            {{ isCreating ? 'Initializing...' : 'Initialize Template' }}
-          </button>
+          <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'initialize-template'" @mouseleave="activeTooltip = null">
+            <button class="btn-save" @click="handleCreateResume" :disabled="isCreating || !newResumeName || !newResumeCategory">
+              <RotateCw v-if="isCreating" :size="16" class="spinner" />
+              <Save v-else :size="16" />
+            </button>
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'initialize-template'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                :transition="{ duration: 0.15 }"
+                class="flying-message"
+              >
+                {{ isCreating ? 'Initializing...' : 'Initialize Template' }}
+              </Motion>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </transition>
@@ -130,7 +145,23 @@ const handleCreateResume = async () => {
       <FileText :size="48" class="empty-icon" />
       <h3>No templates found</h3>
       <p>Create your first base resume to start tailoring.</p>
-      <button class="btn-primary" @click="toggleNewForm">Initialize First Template</button>
+      <div class="btn-tooltip-wrapper" style="margin: 0 auto;" @mouseenter="activeTooltip = 'init-first'" @mouseleave="activeTooltip = null">
+        <button class="btn-primary" @click="toggleNewForm">
+          <Plus :size="18" />
+        </button>
+        <AnimatePresence>
+          <Motion
+            v-if="activeTooltip === 'init-first'"
+            :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+            :animate="{ opacity: 1, y: 0, scale: 1 }"
+            :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+            :transition="{ duration: 0.15 }"
+            class="flying-message"
+          >
+            Initialize First Template
+          </Motion>
+        </AnimatePresence>
+      </div>
     </div>
 
     <div v-else class="resumes-grid">
@@ -322,19 +353,31 @@ const handleCreateResume = async () => {
 }
 
 .form-actions { display: flex; justify-content: flex-end; }
-
 .btn-save {
   background: var(--accent);
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 12px 24px;
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
   transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 .resumes-grid {
   display: grid;

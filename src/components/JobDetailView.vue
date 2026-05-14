@@ -21,7 +21,15 @@ import {
   Check, 
   X,
   Play,
-  RotateCw
+  RotateCw,
+  Info,
+  ListChecks,
+  Target,
+  Settings,
+  FileCode,
+  Briefcase,
+  Layers,
+  Activity
 } from '@lucide/vue';
 
 interface BaseResume {
@@ -376,30 +384,78 @@ const deleteJob = async () => {
     <div class="split-view">
       <aside class="panel info-panel">
         <div class="section">
-          <h3>Information</h3>
+          <div class="section-header-icon" @mouseenter="activeTooltip = 'info-sec'" @mouseleave="activeTooltip = null">
+            <Info :size="16" />
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'info-sec'"
+                :initial="{ opacity: 0, x: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, x: 12, scale: 1 }"
+                :exit="{ opacity: 0, x: 5, scale: 0.9 }"
+                class="flying-message sidebar-tooltip"
+              >
+                Information
+              </Motion>
+            </AnimatePresence>
+          </div>
           <div class="meta-grid">
-            <span class="label">Work Model</span><span class="value">{{ jobDetails?.work_model }}</span>
-            <span class="label">Type</span><span class="value">{{ jobDetails?.employment_type }}</span>
-            <span class="label">Status</span><span class="value">{{ jobDetails?.status }}</span>
+            <div class="meta-icon-wrapper" @mouseenter="activeTooltip = 'work-model'" @mouseleave="activeTooltip = null">
+              <Briefcase :size="14" />
+              <AnimatePresence>
+                <Motion v-if="activeTooltip === 'work-model'" class="flying-message sidebar-tooltip" :initial="{ opacity: 0, x: 5 }" :animate="{ opacity: 1, x: 12 }">Work Model</Motion>
+              </AnimatePresence>
+            </div>
+            <span class="value">{{ jobDetails?.work_model }}</span>
+            
+            <div class="meta-icon-wrapper" @mouseenter="activeTooltip = 'emp-type'" @mouseleave="activeTooltip = null">
+              <Layers :size="14" />
+              <AnimatePresence>
+                <Motion v-if="activeTooltip === 'emp-type'" class="flying-message sidebar-tooltip" :initial="{ opacity: 0, x: 5 }" :animate="{ opacity: 1, x: 12 }">Employment Type</Motion>
+              </AnimatePresence>
+            </div>
+            <span class="value">{{ jobDetails?.employment_type }}</span>
+            
+            <div class="meta-icon-wrapper" @mouseenter="activeTooltip = 'status-meta'" @mouseleave="activeTooltip = null">
+              <Activity :size="14" />
+              <AnimatePresence>
+                <Motion v-if="activeTooltip === 'status-meta'" class="flying-message sidebar-tooltip" :initial="{ opacity: 0, x: 5 }" :animate="{ opacity: 1, x: 12 }">Application Status</Motion>
+              </AnimatePresence>
+            </div>
+            <span class="value">{{ jobDetails?.status }}</span>
           </div>
         </div>
 
         <div class="section scroll-section" v-if="jobDetails?.requirements">
-          <h3>Requirements</h3>
+          <div class="section-header-icon" @mouseenter="activeTooltip = 'req-sec'" @mouseleave="activeTooltip = null">
+            <ListChecks :size="16" />
+            <AnimatePresence>
+              <Motion v-if="activeTooltip === 'req-sec'" class="flying-message sidebar-tooltip" :initial="{ opacity: 0, x: 5 }" :animate="{ opacity: 1, x: 12 }">Requirements</Motion>
+            </AnimatePresence>
+          </div>
           <ul class="tight-list">
             <li v-for="req in JSON.parse(jobDetails.requirements)" :key="req">{{ req }}</li>
           </ul>
         </div>
 
         <div class="section scroll-section" v-if="jobDetails?.core_responsibilities">
-          <h3>Responsibilities</h3>
+          <div class="section-header-icon" @mouseenter="activeTooltip = 'res-sec'" @mouseleave="activeTooltip = null">
+            <Target :size="16" />
+            <AnimatePresence>
+              <Motion v-if="activeTooltip === 'res-sec'" class="flying-message sidebar-tooltip" :initial="{ opacity: 0, x: 5 }" :animate="{ opacity: 1, x: 12 }">Responsibilities</Motion>
+            </AnimatePresence>
+          </div>
           <ul class="tight-list">
             <li v-for="res in JSON.parse(jobDetails.core_responsibilities)" :key="res">{{ res }}</li>
           </ul>
         </div>
 
         <div class="section footer-section">
-          <h3>Configuration</h3>
+          <div class="section-header-icon" @mouseenter="activeTooltip = 'config-sec'" @mouseleave="activeTooltip = null">
+            <Settings :size="16" />
+            <AnimatePresence>
+              <Motion v-if="activeTooltip === 'config-sec'" class="flying-message sidebar-tooltip" :initial="{ opacity: 0, x: 5 }" :animate="{ opacity: 1, x: 12 }">Configuration</Motion>
+            </AnimatePresence>
+          </div>
           <div class="form-group">
             <label>Base Template</label>
             <select v-model="selectedStandardResume" class="compact-select">
@@ -420,7 +476,6 @@ const deleteJob = async () => {
             <button class="btn-accent w-full" @click="generateResume" :disabled="isGenerating || !selectedStandardResume">
               <Play v-if="!isGenerating" :size="14" />
               <RotateCw v-else :size="14" class="spinner" />
-              {{ isGenerating ? 'Tailoring...' : 'Run Intelligence' }}
             </button>
             <AnimatePresence>
               <Motion
@@ -431,7 +486,7 @@ const deleteJob = async () => {
                 :transition="{ duration: 0.15 }"
                 class="flying-message info-tooltip"
               >
-                AI Tailoring Workflow
+                {{ isGenerating ? 'Tailoring...' : 'Run Intelligence' }}
               </Motion>
             </AnimatePresence>
           </div>
@@ -441,7 +496,12 @@ const deleteJob = async () => {
       <div class="panel main-panel">
         <div class="panel-tabs">
           <div class="left-tabs">
-            <button class="tab active">SOURCE</button>
+            <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'source-tab'" @mouseleave="activeTooltip = null">
+              <button class="tab active"><FileCode :size="14" /></button>
+              <AnimatePresence>
+                <Motion v-if="activeTooltip === 'source-tab'" class="flying-message tab-tooltip" :initial="{ opacity: 0, y: 5 }" :animate="{ opacity: 1, y: 0 }">Source Code</Motion>
+              </AnimatePresence>
+            </div>
             <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'save-latex'" @mouseleave="activeTooltip = null">
               <button class="tab-btn" @click="saveLatexContent"><Save :size="14" /></button>
               <AnimatePresence>
@@ -623,6 +683,41 @@ const deleteJob = async () => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.section-header-icon {
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: flex;
+  position: relative;
+  cursor: help;
+}
+
+.meta-icon-wrapper {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: help;
+}
+
+.sidebar-tooltip {
+  left: 100%;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  margin-left: 12px;
+  z-index: 2000;
+}
+
+.sidebar-tooltip::after {
+  top: 50%;
+  right: 100%;
+  left: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+  border-top-color: transparent;
+  border-right-color: var(--accent);
 }
 
 .info-panel {
