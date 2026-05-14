@@ -23,11 +23,14 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // 1. Initialize Stronghold with secure Argon2 hashing
-            let salt_path = app
+            let local_data_dir = app
                 .path()
                 .app_local_data_dir()
-                .expect("could not resolve app local data path")
-                .join("salt.txt");
+                .expect("could not resolve app local data path");
+            
+            std::fs::create_dir_all(&local_data_dir).expect("Failed to create local data dir");
+            
+            let salt_path = local_data_dir.join("salt.txt");
 
             app.handle()
                 .plugin(tauri_plugin_stronghold::Builder::with_argon2(&salt_path).build())

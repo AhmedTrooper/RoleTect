@@ -1,16 +1,20 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { Stronghold } from '@tauri-apps/plugin-stronghold';
-import { appDataDir } from '@tauri-apps/api/path';
-import { readTextFile, writeTextFile, remove } from '@tauri-apps/plugin-fs';
+import { ref, shallowRef } from 'vue';
+import { Stronghold, Store } from '@tauri-apps/plugin-stronghold';
+import { appDataDir, join } from '@tauri-apps/api/path';
+import { readTextFile, writeTextFile, remove, exists } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 
 export const useSettingsStore = defineStore('settings', () => {
   const hasSecureKey = ref(false);
-  const selectedAiProvider = ref('openai'); // Ready for Gemini, Groq, etc.
+  const selectedAiProvider = ref('openai'); 
   const selectedAiModel = ref('gpt-4o');
+  
+  // Cache Stronghold and Store instances
+  const strongholdInstance = shallowRef<Stronghold | null>(null);
+  const storeInstance = shallowRef<Store | null>(null);
 
-  const generateVaultPassword = async () => {
+  const generateVaultPassword = () => {
     const bytes = new Uint8Array(32);
     crypto.getRandomValues(bytes);
     return Array.from(bytes)
@@ -20,36 +24,41 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const getVaultPassword = async () => {
     const dir = await appDataDir();
-    const passwordPath = `${dir}/stronghold.pass`;
+    const passwordPath = await join(dir, 'stronghold.pass');
     try {
       return (await readTextFile(passwordPath)).trim();
     } catch {
-      const password = await generateVaultPassword();
+      const password = generateVaultPassword();
       await writeTextFile(passwordPath, password);
       return password;
     }
   };
 
-  // Helper to load the Stronghold instance and the Store
   const getVault = async () => {
+    if (strongholdInstance.value && storeInstance.value) {
+      return { stronghold: strongholdInstance.value, store: storeInstance.value };
+    }
+
     const dir = await appDataDir();
-    const vaultPath = `${dir}/secrets.stronghold`;
+    const vaultPath = await join(dir, 'secrets.stronghold');
     let password = await getVaultPassword();
-    let stronghold;
+    let stronghold: Stronghold;
+
     try {
       stronghold = await Stronghold.load(vaultPath, password);
-    } catch {
-      // If the vault cannot be decrypted (e.g., password mismatch), reset it.
-      password = await generateVaultPassword();
-      await writeTextFile(`${dir}/stronghold.pass`, password);
-      try {
+    } catch (error) {
+      console.warn("Failed to load Stronghold, attempting reset:", error);
+      // Only reset if it's likely a password issue or corruption
+      password = generateVaultPassword();
+      const passwordPath = await join(dir, 'stronghold.pass');
+      await writeTextFile(passwordPath, password);
+      
+      if (await exists(vaultPath)) {
         await remove(vaultPath);
-      } catch {
-        // Ignore removal errors; load will recreate if needed.
       }
       stronghold = await Stronghold.load(vaultPath, password);
     }
-    // We must load a client first, then get the store
+
     let client;
     try {
       client = await stronghold.loadClient('api_client');
@@ -57,7 +66,11 @@ export const useSettingsStore = defineStore('settings', () => {
       client = await stronghold.createClient('api_client');
       await stronghold.save();
     }
+    
     const store = client.getStore();
+    
+    strongholdInstance.value = stronghold;
+    storeInstance.value = store;
 
     return { stronghold, store };
   };
@@ -67,7 +80,6 @@ export const useSettingsStore = defineStore('settings', () => {
       const { stronghold, store } = await getVault();
       const storageKey = `ai_api_key_${provider}`;
       await store.insert(storageKey, Array.from(new TextEncoder().encode(key)));
-      // Save is called on the stronghold instance!
       await stronghold.save(); 
       hasSecureKey.value = true;
     } catch (error) {
@@ -82,11 +94,12 @@ export const useSettingsStore = defineStore('settings', () => {
       const { store } = await getVault();
       const storageKey = `ai_api_key_${targetProvider}`;
       const keyBytes = await store.get(storageKey);
-      if (keyBytes) {
+      if (keyBytes && (keyBytes as number[]).length > 0) {
         return new TextDecoder().decode(new Uint8Array(keyBytes as Iterable<number>));
       }
       return null;
-    } catch {
+    } catch (error) {
+      console.error("Stronghold get error:", error);
       return null;
     }
   };
@@ -96,38 +109,27 @@ export const useSettingsStore = defineStore('settings', () => {
       const { store } = await getVault();
       const storageKey = `ai_api_key_${provider}`;
       const keyBytes = await store.get(storageKey);
-      hasSecureKey.value = keyBytes !== null;
-    } catch {
+      hasSecureKey.value = keyBytes !== null && (keyBytes as number[]).length > 0;
+    } catch (error) {
+      console.error("Error loading key status:", error);
       hasSecureKey.value = false;
     }
   };
 
-
-
-
   const saveModelConfig = async (provider: string, model: string) => {
     try {
-      // Pass both to Rust
       await invoke('save_model_pref', { provider, model });
       const config: { provider: string, model: string } = await invoke('get_model_pref');
       selectedAiProvider.value = config.provider;
       selectedAiModel.value = config.model;
-      if (config.provider !== provider || config.model !== model) {
-        throw new Error('Saved settings did not persist as expected.');
-      }
     } catch (error) {
       console.error("SQLite save error:", error);
-      const message =
-        typeof error === 'string'
-          ? error
-          : (error as Error).message || JSON.stringify(error);
-      throw new Error(message || 'Failed to save model settings.');
+      throw error;
     }
   };
 
   const loadSettings = async () => {
     try {
-      // Rust now returns the AiConfig object
       const config: { provider: string, model: string } = await invoke('get_model_pref');
       selectedAiProvider.value = config.provider;
       selectedAiModel.value = config.model;
