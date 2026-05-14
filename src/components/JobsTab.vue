@@ -739,11 +739,50 @@ const getStatusClass = (status: string) => {
 
 @media (max-width: 768px) {
   .jobs-container {
-    padding: 20px;
+    padding: 16px;
   }
-  .page-header { flex-direction: column; gap: 20px; }
-  .filters-bar { flex-direction: column; align-items: stretch; }
-  .controls { flex-direction: column; }
+  .page-header { 
+    flex-direction: row; 
+    align-items: center; 
+    margin-bottom: 20px; 
+    gap: 12px;
+  }
+  .page-header h1 { font-size: 1.5rem; }
+  .subtitle { display: none; }
+  
+  .filters-bar { 
+    padding: 12px; 
+    gap: 12px; 
+    margin-bottom: 16px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .controls { 
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .search-box input {
+    padding: 10px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .icon-select {
+    padding: 0 4px 0 8px;
+  }
+  
+  .filter-group select {
+    padding: 8px 24px 8px 4px;
+    font-size: 0.75rem;
+  }
+
+  .btn-primary, .btn-secondary, .btn-danger-outline, .btn-delete-batch {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
 }
 
 @media (max-width: 480px) {
