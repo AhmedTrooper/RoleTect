@@ -54,6 +54,7 @@ pub fn run() {
             commands::jobs::delete_job,
             commands::jobs::delete_jobs_batch,
             commands::jobs::delete_all_jobs,
+            commands::jobs::update_tailored_resume,
             commands::jobs::get_tailored_resume,
             commands::jobs::get_latest_tailored_resume,
             commands::jobs::tailor_resume,
@@ -62,7 +63,8 @@ pub fn run() {
             commands::resumes::create_new_resume,
             commands::resumes::update_resume,
             commands::resumes::delete_resume,
-            commands::pdf::compile_resume_to_pdf
+            commands::pdf::compile_resume_to_pdf,
+            commands::pdf::fix_latex_with_ai
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

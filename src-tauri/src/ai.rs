@@ -107,3 +107,56 @@ Please tailor the resume to match the job description. Return only the modified 
         _ => Err(format!("Unsupported provider: {}", provider))
     }
 }
+
+pub async fn fix_latex_errors(
+    provider: &str,
+    model: &str,
+    api_key: &str,
+    broken_latex: &str,
+    error_logs: &str,
+) -> Result<String, String> {
+    let model = model.trim();
+    let system_prompt = r#"You are an expert LaTeX debugger. Your task is to fix syntax errors, missing packages, or illegal characters in LaTeX code based on provided error logs.
+
+Rules:
+1. Fix the specific errors mentioned in the logs.
+2. DO NOT change the resume content or structure unless necessary to fix the error.
+3. Output ONLY the corrected LaTeX code with no markdown, no explanations, no code fences.
+4. Ensure the output is a valid, compilable LaTeX document."#;
+
+    let user_prompt = format!(
+        r#"Broken LaTeX Code:
+{}
+
+Tectonic Error Logs:
+{}
+
+Please fix the LaTeX code so it compiles successfully. Return only the fixed LaTeX code."#,
+        broken_latex,
+        error_logs
+    );
+
+    match provider {
+        "gemini" => {
+            let client = gemini::Client::new(api_key).map_err(|e| e.to_string())?;
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(&user_prompt).await.map_err(|e| format!("Gemini AI Fix Error: {}", e))
+        },
+        "openai" => {
+            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(&user_prompt).await.map_err(|e| format!("OpenAI Fix Error: {}", e))
+        },
+        "groq" => {
+            let client = groq::Client::new(api_key).map_err(|e| e.to_string())?;
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(&user_prompt).await.map_err(|e| format!("Groq Fix Error: {}", e))
+        },
+        "anthropic" => {
+            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(&user_prompt).await.map_err(|e| format!("Anthropic Fix Error: {}", e))
+        },
+        _ => Err(format!("Unsupported provider: {}", provider))
+    }
+}

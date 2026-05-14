@@ -207,6 +207,24 @@ pub async fn delete_all_jobs(
 
 
 #[tauri::command]
+pub async fn update_tailored_resume(
+    state: State<'_, AppState>,
+    job_id: String,
+    latex_content: String,
+) -> Result<(), String> {
+    let mut db_guard = state.db.lock().map_err(|e| format!("Mutex error: {}", e))?;
+    let conn = db_guard.as_mut().ok_or("Database connection lost")?;
+
+    conn.execute(
+        "UPDATE tailored_resumes SET final_latex_content = ?1, updated_at = CURRENT_TIMESTAMP 
+         WHERE job_id = ?2",
+        [&latex_content, &job_id],
+    ).map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn get_tailored_resume(
     state: State<'_, AppState>,
     id: String,

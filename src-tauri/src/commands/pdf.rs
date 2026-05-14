@@ -1,5 +1,18 @@
 use tauri::command;
 
+use crate::ai;
+
+#[command]
+pub async fn fix_latex_with_ai(
+    provider: String,
+    model: String,
+    api_key: String,
+    broken_latex: String,
+    error_logs: String,
+) -> Result<String, String> {
+    ai::fix_latex_errors(&provider, &model, &api_key, &broken_latex, &error_logs).await
+}
+
 #[command]
 pub async fn compile_resume_to_pdf(latex_code: String) -> Result<Vec<u8>, String> {
     // TeX engines are notoriously stack-heavy. Segfaults are frequently caused by 

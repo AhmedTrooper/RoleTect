@@ -113,11 +113,15 @@ import { writeFile } from '@tauri-apps/plugin-fs';
 const isDownloading = ref(false);
 const pdfBytesBuffer = ref<Uint8Array | null>(null);
 
+const isFixing = ref(false);
+const compilationError = ref<string | null>(null);
+
 // Trigger PDF Compilation
 const compilePdf = async () => {
   if (!generatedLatex.value) return;
   isCompilingPDF.value = true;
   error.value = null;
+  compilationError.value = null;
   
   try {
     const pdfBytes = await invoke<number[]>('compile_resume_to_pdf', { 
@@ -136,11 +140,61 @@ const compilePdf = async () => {
     }
     
     pdfUrl.value = URL.createObjectURL(blob);
+
+    // Auto-save on successful compilation
+    await saveLatexContent();
   } catch (err: any) {
     console.error("PDF Compilation Error:", err);
-    error.value = err.toString();
+    compilationError.value = err.toString();
+    error.value = "LaTeX Compilation Failed. You can try 'AI Fix' or manually edit and Save.";
   } finally {
     isCompilingPDF.value = false;
+  }
+};
+
+const saveLatexContent = async () => {
+  try {
+    await invoke('update_tailored_resume', {
+      jobId: props.id,
+      latexContent: generatedLatex.value
+    });
+    await message('Resume content saved successfully.', { title: 'Success', kind: 'info' });
+  } catch (err: any) {
+    console.error("Save Error:", err);
+    error.value = `Failed to save changes: ${err.toString()}`;
+  }
+};
+
+const fixWithAi = async () => {
+  if (!generatedLatex.value || !compilationError.value) return;
+  isFixing.value = true;
+  error.value = null;
+
+  try {
+    const apiKey = await settingsStore.getDecryptedKey();
+    if (!apiKey) throw new Error("API Key not found. Please set it in Settings.");
+
+    const provider = settingsStore.selectedAiProvider;
+    const model = settingsStore.selectedAiModel;
+
+    const fixedCode = await invoke<string>('fix_latex_with_ai', {
+      provider,
+      model,
+      apiKey,
+      brokenLatex: generatedLatex.value,
+      errorLogs: compilationError.value
+    });
+
+    generatedLatex.value = fixedCode;
+    error.value = "AI has suggested a fix. Trying to re-compile...";
+    
+    // Automatically re-compile with the fixed code
+    await compilePdf();
+  } catch (err: any) {
+    console.error("AI Fix Error:", err);
+    error.value = `AI Fix failed: ${err.toString()}`;
+  } finally {
+    isFixing.value = false;
   }
 };
 
@@ -272,8 +326,20 @@ const deleteJob = async () => {
         <div class="tabs">
           <div class="tab-group">
             <button class="tab active">LaTeX Source</button>
+            <button 
+              class="tab save-btn-inline" 
+              @click="saveLatexContent"
+            >💾 Save Code</button>
           </div>
           <div class="action-group">
+            <button 
+              v-if="compilationError" 
+              class="tab ai-fix-btn" 
+              @click="fixWithAi" 
+              :disabled="isFixing"
+            >
+              {{ isFixing ? '✨ Fixing...' : '✨ AI Fix' }}
+            </button>
             <button class="tab secondary-btn" @click="compilePdf" :disabled="!generatedLatex || isCompilingPDF">
               {{ isCompilingPDF ? '⚙️ Compiling...' : '📄 Compile to PDF' }}
             </button>
@@ -286,6 +352,14 @@ const deleteJob = async () => {
               {{ isDownloading ? '📥 Saving...' : '📥 Download PDF' }}
             </button>
           </div>
+        </div>
+
+        <div v-if="compilationError" class="compilation-error-log">
+          <header>
+            <strong>Compilation Log</strong>
+            <button @click="compilationError = null">✕</button>
+          </header>
+          <pre>{{ compilationError }}</pre>
         </div>
 
         <textarea 
@@ -349,7 +423,20 @@ const deleteJob = async () => {
 .tab { background: none; color: var(--muted); border: none; font-weight: 700; cursor: pointer; padding: 6px 8px; }
 .tab.active { border-bottom: 2px solid var(--accent); color: var(--ink); }
 .secondary-btn { background-color: var(--accent); color: #fff; border-radius: 10px; padding: 6px 14px; font-size: 0.9rem; }
+.ai-fix-btn { background-color: #7048e8; color: white; border-radius: 10px; padding: 6px 14px; font-size: 0.9rem; transition: 0.2s; border: none; }
+.ai-fix-btn:hover:not(:disabled) { background-color: #5f3dc4; }
+.ai-fix-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.save-btn-inline { font-size: 0.8rem; color: var(--accent); opacity: 0.8; transition: 0.2s; margin-left: 8px; }
+.save-btn-inline:hover { opacity: 1; transform: translateY(-1px); }
+
 .download-btn { background-color: var(--surface-soft); color: var(--accent); border: 1px solid var(--accent); border-radius: 10px; padding: 6px 14px; font-size: 0.9rem; transition: 0.2s; }
+
+.compilation-error-log { background: #2b1d1d; border: 1px solid #ff6b6b44; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.compilation-error-log header { background: #3d2323; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
+.compilation-error-log header strong { font-size: 0.75rem; text-transform: uppercase; color: #ff6b6b; letter-spacing: 0.05em; }
+.compilation-error-log header button { background: none; border: none; color: #ff6b6b; cursor: pointer; padding: 0 4px; }
+.compilation-error-log pre { margin: 0; padding: 12px; font-family: 'Monaco', monospace; font-size: 0.8rem; color: #fcc; white-space: pre-wrap; max-height: 120px; overflow-y: auto; }
 .download-btn:hover { background-color: var(--accent); color: white; }
 
 .code-editor { flex-grow: 1; background-color: var(--surface); color: var(--ink); font-family: 'Monaco', 'Menlo', monospace; padding: 14px; border: 1px solid var(--line); border-radius: 10px; resize: none; font-size: 0.9rem; min-height: 260px; }
