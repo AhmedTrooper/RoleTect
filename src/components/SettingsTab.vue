@@ -29,42 +29,162 @@ const providers = [
 
 const modelsByProvider: Record<string, {id: string, name: string}[]> = {
   openai: [
-    { id: 'gpt-5.5-pro', name: 'GPT-5.5 Pro (Thinking)' },
-    { id: 'gpt-5.5-thinking', name: 'GPT-5.5 Thinking' },
-    { id: 'gpt-5.3-instant', name: 'GPT-5.3 Instant' },
-    { id: 'gpt-5-main', name: 'GPT-5 Foundation' },
+    // --- Legacy / Very Old ---
+    { id: 'gpt-1', name: 'GPT-1 (Historical)' },
+    { id: 'gpt-2', name: 'GPT-2 (Historical)' },
+    { id: 'text-ada-001', name: 'GPT-3 Ada (Legacy)' },
+    { id: 'text-babbage-001', name: 'GPT-3 Babbage (Legacy)' },
+    { id: 'text-curie-001', name: 'GPT-3 Curie (Legacy)' },
+    { id: 'text-davinci-003', name: 'GPT-3 Davinci (Legacy)' },
+    { id: 'gpt-3.5-turbo-0301', name: 'GPT-3.5 Turbo (Initial)' },
+    { id: 'gpt-3.5-turbo-16k', name: 'GPT-3.5 Turbo 16k (Legacy)' },
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Final)' },
+    
+    // --- GPT-4 Era ---
+    { id: 'gpt-4-0314', name: 'GPT-4 (Initial)' },
+    { id: 'gpt-4-32k', name: 'GPT-4 32k' },
+    { id: 'gpt-4-1106-preview', name: 'GPT-4 Turbo Preview' },
+    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+    { id: 'gpt-4o', name: 'GPT-4o (Omni)' },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
     { id: 'gpt-4.5', name: 'GPT-4.5 (Legacy)' },
-    { id: 'o3', name: 'o3 (Reasoning)' }
+    
+    // --- Early Reasoning Era ---
+    { id: 'o1-preview', name: 'o1 Preview' },
+    { id: 'o1-mini', name: 'o1 Mini' },
+    { id: 'o1', name: 'o1' },
+    { id: 'o3', name: 'o3 (Reasoning)' },
+    { id: 'o4-mini', name: 'o4 Mini' },
+
+    // --- GPT-5 Era (Current) ---
+    { id: 'gpt-5-nano', name: 'GPT-5 Nano' },
+    { id: 'gpt-5-mini', name: 'GPT-5 Mini' },
+    { id: 'gpt-5-main', name: 'GPT-5 Foundation' },
+    { id: 'gpt-5.1', name: 'GPT-5.1' },
+    { id: 'gpt-5.2', name: 'GPT-5.2' },
+    { id: 'gpt-5.3-instant', name: 'GPT-5.3 Instant' },
+    { id: 'gpt-5.3-codex-spark', name: 'GPT-5.3 Codex Spark (Real-time Coding)' },
+    { id: 'gpt-5.4-nano', name: 'GPT-5.4 Nano' },
+    { id: 'gpt-5.4-mini', name: 'GPT-5.4 Mini' },
+    { id: 'gpt-5.4', name: 'GPT-5.4 Standard' },
+    { id: 'gpt-5.5-instant', name: 'GPT-5.5 Instant' },
+    { id: 'gpt-5.5', name: 'GPT-5.5' },
+    { id: 'gpt-5.5-thinking', name: 'GPT-5.5 Thinking' },
+    { id: 'gpt-5.5-pro', name: 'GPT-5.5 Pro (Thinking)' },
+    
+    // --- Specialty / Open ---
+    { id: 'gpt-rosalind', name: 'GPT-Rosalind (Life Sciences)' },
+    { id: 'chatgpt-images-2', name: 'ChatGPT Images 2.0' }
   ],
+  
   gemini: [
-    { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (Preview)' },
-    { id: 'gemini-3.1-flash-preview', name: 'Gemini 3.1 Flash (Preview)' },
-    { id: 'gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Flash-Lite (Preview)' },
-    { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro (Preview)' },
-    { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash (Preview)' },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Stable)' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Stable)' },
+    // --- Legacy / Very Old ---
+    { id: 'text-bison-001', name: 'PaLM (Text Bison)' },
+    { id: 'chat-bison-001', name: 'PaLM (Chat Bison)' },
+    { id: 'gemini-1.0-nano', name: 'Gemini 1.0 Nano (Legacy)' },
+    { id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro (Legacy)' },
+    { id: 'gemini-1.0-ultra', name: 'Gemini 1.0 Ultra (Legacy)' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Legacy)' },
     { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Legacy)' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Legacy)' }
+
+    // --- Gemini 2.x Era ---
+    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Legacy)' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Legacy)' },
+    { id: 'gemini-2.0-pro', name: 'Gemini 2.0 Pro (Legacy)' },
+    { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Stable)' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Stable)' },
+
+    // --- Gemini 3.x Era (Current) ---
+    { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash (Preview)' },
+    { id: 'gemini-3-deep-think', name: 'Gemini 3.0 Deep Think' },
+    { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro (Preview)' },
+    { id: 'gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Flash-Lite (Preview)' },
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite (Stable/GA)' },
+    { id: 'gemini-3.1-flash-preview', name: 'Gemini 3.1 Flash (Preview)' },
+    { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (Preview)' },
+    
+    // --- Specialty / Agents / Vision ---
+    { id: 'gemini-3.1-flash-image', name: 'Gemini 3.1 Flash Image (Nano Banana 2)' },
+    { id: 'nano-banana-pro', name: 'Nano Banana Pro (Studio Quality)' },
+    { id: 'deep-research-preview-04-2026', name: 'Deep Research Agent (Preview)' },
+    { id: 'deep-research-max-preview-04-2026', name: 'Deep Research Max (Preview)' },
+    { id: 'veo-3.1-lite-generate-preview', name: 'Veo 3.1 Lite Video (Preview)' },
+    { id: 'gemini-robotics-er-1.6-preview', name: 'Gemini Robotics-ER 1.6' },
+    { id: 'gemini-embedding-2', name: 'Gemini Embedding 2 (GA)' },
+    { id: 'gemma-4-26b-a4b-it', name: 'Gemma 4 26B IT' },
+    { id: 'gemma-4-31b-it', name: 'Gemma 4 31B IT' }
   ],
+  
   anthropic: [
-    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7 (Power)' },
-    { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6 (Balanced)' },
-    { id: 'claude-opus-4-6', name: 'Claude Opus 4.6' },
+    // --- Legacy / Very Old ---
+    { id: 'claude-1', name: 'Claude 1.0 (Legacy)' },
+    { id: 'claude-instant-1.2', name: 'Claude Instant 1.2 (Legacy)' },
+    { id: 'claude-2.0', name: 'Claude 2.0 (Legacy)' },
+    { id: 'claude-2.1', name: 'Claude 2.1 (Legacy)' },
+    
+    // --- Claude 3 Era ---
+    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' },
+    { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet' },
+    { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
+    { id: 'claude-3-5-haiku-latest', name: 'Claude 3.5 Haiku' },
+    { id: 'claude-3-5-sonnet-latest', name: 'Claude 3.5 Sonnet (Legacy)' },
+    { id: 'claude-3-7-sonnet-latest', name: 'Claude 3.7 Sonnet' },
+    
+    // --- Claude 4 Era (Current) ---
+    { id: 'claude-4-sonnet', name: 'Claude 4 Sonnet' },
+    { id: 'claude-4-opus', name: 'Claude 4 Opus' },
+    { id: 'claude-4-1-opus', name: 'Claude 4.1 Opus' },
     { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5 (Speed)' },
     { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
     { id: 'claude-opus-4-5', name: 'Claude Opus 4.5' },
-    { id: 'claude-3-7-sonnet-latest', name: 'Claude 3.7 Sonnet' },
-    { id: 'claude-3-5-sonnet-latest', name: 'Claude 3.5 Sonnet (Legacy)' }
+    { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6 (Balanced)' },
+    { id: 'claude-opus-4-6', name: 'Claude Opus 4.6' },
+    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7 (Power)' },
+    
+    // --- Specialty ---
+    { id: 'claude-mythos-preview', name: 'Claude Mythos Preview (Cybersecurity)' },
+    { id: 'claude-cowork', name: 'Claude Cowork (Multi-step Agent)' }
   ],
+  
   groq: [
-    { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Groq Flagship)' },
-    { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout' },
+    // --- Legacy / Very Old ---
+    { id: 'llama2-70b-4096', name: 'Llama 2 70B (Legacy)' },
+    { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B (Legacy)' },
+    { id: 'gemma-7b-it', name: 'Gemma 7B IT (Legacy)' },
+    { id: 'llama3-8b-8192', name: 'Llama 3 8B (Legacy)' },
+    { id: 'llama3-70b-8192', name: 'Llama 3 70B (Legacy)' },
+    
+    // --- Llama 3.x Era ---
+    { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant' },
+    { id: 'llama-3.1-70b-versatile', name: 'Llama 3.1 70B Versatile' },
+    { id: 'llama-3.2-11b-vision-preview', name: 'Llama 3.2 11B Vision' },
+    { id: 'llama-3.2-90b-vision-preview', name: 'Llama 3.2 90B Vision' },
     { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B' },
     { id: 'llama-3.3-70b-specdec', name: 'Llama 3.3 SpecDec' },
-    { id: 'llama-3.1-70b-versatile', name: 'Llama 3.1 70B' },
+
+    // --- Llama 4 Era (Current) ---
+    { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout (17B x 16E)' },
+    { id: 'meta-llama/llama-4-maverick-17b-128e-instruct', name: 'Llama 4 Maverick (17B x 128E)' },
+    { id: 'meta-llama/llama-4-maverick-400b-instruct', name: 'Llama 4 Maverick (400B)' },
+
+    // --- OpenAI Open Weights on Groq ---
+    { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B' },
+    { id: 'openai/gpt-oss-safeguard-20b', name: 'GPT-OSS Safeguard 20B' },
+    { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Groq Flagship)' },
+
+    // --- Mistral ---
     { id: 'mistral-medium-3.5', name: 'Mistral Medium 3.5' },
-    { id: 'mistral-small-4', name: 'Mistral Small 4' }
+    { id: 'mistral-small-4', name: 'Mistral Small 4' },
+
+    // --- DeepSeek, Qwen & Others ---
+    { id: 'deepseek-v4-flash', name: 'DeepSeek-V4 Flash' },
+    { id: 'deepseek-v4-pro', name: 'DeepSeek-V4 Pro' },
+    { id: 'qwen-3-32b', name: 'Qwen3 32B' },
+    { id: 'qwen/qwen3-vl-32b-instruct', name: 'Qwen 3 VL 32B Instruct' },
+    { id: 'glm-5.1', name: 'GLM-5.1' },
+    { id: 'moonshotai/kimi-k2-instruct-0905', name: 'Kimi K2 Instruct (Reasoning)' },
+    { id: 'minimaxai/minimax-m2.5', name: 'Minimax M2.5 (Enterprise)' }
   ]
 };
 
