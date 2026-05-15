@@ -38,13 +38,9 @@ const handleExternalClick = (url: string) => {
 </script>
 
 <template>
-  <Titlebar class="desktop-only" />
+  <Titlebar />
   <div class="app-container">
     <aside class="sidebar">
-      <div class="logo-section mobile-only">
-        <div class="logo-dot"></div>
-      </div>
-      
       <nav class="nav-menu">
         <router-link 
           v-for="tab in tabs" 
@@ -283,15 +279,10 @@ const handleExternalClick = (url: string) => {
 }
 
 @media (max-width: 959px) {
-  .desktop-only {
-    display: none !important;
-  }
-  .mobile-only {
-    display: flex !important;
-  }
   .app-container {
-    height: 100vh;
-    margin-top: 0;
+    /* Always keep margin for Titlebar */
+    height: calc(100vh - 36px);
+    margin-top: 36px;
   }
   .nav-divider {
     display: block;
@@ -315,10 +306,6 @@ const handleExternalClick = (url: string) => {
     border-right: 1px solid var(--line);
     padding: 12px 0;
     align-items: center;
-  }
-
-  .logo-section {
-    display: none; /* Desktop uses titlebar logo */
   }
 
   .nav-menu {
