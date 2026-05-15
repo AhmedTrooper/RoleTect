@@ -40,18 +40,20 @@ jobs:
         with:
           targets: ${{ startsWith(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      # Fix for macOS: Install pkg-config and libpng locally via homebrew
+      # Fix for macOS: Force Homebrew path integration and explicit target mappings
       - name: install dependencies (macOS)
         if: startsWith(matrix.platform, 'macos')
         run: |
           brew install libpng pkg-config
+          echo "PKG_CONFIG_PATH=$(brew --prefix libpng)/lib/pkgconfig" >> $env:GITHUB_ENV
+          echo "VCPKG_DISABLE=1" >> $env:GITHUB_ENV
 
-      # Fix for Windows: Install pkg-config and libpng via vcpkg
+      # Fix for Windows: Clean environmental setup using the built-in chocolatey manager
       - name: install dependencies (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
-          vcpkg install libpng:x64-windows
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          choco install pkgconfigportable libpng
+          echo "VCPKG_DISABLE=1" >> $env:GITHUB_ENV
 
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
@@ -65,7 +67,6 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # REMOVED LIBPNG_NO_PKG_CONFIG: 1 to allow pkg-config to naturally discover system libraries
         with:
           tagName: app-v__VERSION__
           releaseName: "App v__VERSION__"
