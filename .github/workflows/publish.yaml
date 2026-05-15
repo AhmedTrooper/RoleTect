@@ -38,14 +38,26 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Ensures both macOS runners have the necessary targets installed
           targets: ${{ startsWith(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      # Fix for macOS: Install pkg-config and libpng locally via homebrew
+      - name: install dependencies (macOS)
+        if: startsWith(matrix.platform, 'macos')
+        run: |
+          brew install libpng pkg-config
+
+      # Fix for Windows: Install pkg-config and libpng via vcpkg
+      - name: install dependencies (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          vcpkg install libpng:x64-windows
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libpng-dev pkg-config
 
       - name: install frontend dependencies
         run: bun install --frozen-lockfile
@@ -53,8 +65,7 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Forces the crate to build libpng from source instead of looking for it on the OS
-          LIBPNG_NO_PKG_CONFIG: 1
+          # REMOVED LIBPNG_NO_PKG_CONFIG: 1 to allow pkg-config to naturally discover system libraries
         with:
           tagName: app-v__VERSION__
           releaseName: "App v__VERSION__"
