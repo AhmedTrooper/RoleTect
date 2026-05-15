@@ -14,7 +14,7 @@ const jobUrl = ref('');
 const activeTooltip = ref<string | null>(null);
 
 const handleParse = async () => {
-  if (!rawJobDescription.value.trim()) return;
+  if (!rawJobDescription.value.trim() && !jobUrl.value.trim()) return;
   
   try {
     const slug = await jobsStore.parseNewJob(rawJobDescription.value, jobUrl.value);
@@ -83,7 +83,7 @@ const handleParse = async () => {
           <button 
             class="btn-primary w-full" 
             @click="handleParse" 
-            :disabled="jobsStore.isLoading || !rawJobDescription"
+            :disabled="jobsStore.isLoading || (!rawJobDescription && !jobUrl)"
           >
             <RotateCw
               v-if="jobsStore.isLoading"

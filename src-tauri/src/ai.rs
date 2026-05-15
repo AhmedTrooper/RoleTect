@@ -1,6 +1,7 @@
 use rig::client::CompletionClient;
 use rig::completion::Prompt;
 use rig::providers::{anthropic, gemini, groq, openai};
+use scraper::{Html, Selector};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -14,48 +15,110 @@ pub struct JobDetails {
     pub core_responsibilities: Vec<String>,
 }
 
+async fn fetch_url_content(url: &str) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let resp = client.get(url).send().await.map_err(|e| format!("Failed to fetch URL: {}", e))?;
+    let html = resp.text().await.map_err(|e| format!("Failed to read response body: {}", e))?;
+
+    let document = Html::parse_document(&html);
+    
+    // Select body and get all text, joining with spaces
+    let selector = Selector::parse("body").map_err(|_| "Failed to parse body selector".to_string())?;
+    let mut text_content = String::new();
+    
+    if let Some(body) = document.select(&selector).next() {
+        for node in body.text() {
+            text_content.push_str(node);
+            text_content.push(' ');
+        }
+    } else {
+        // Fallback if no body, just get all text
+        for node in document.root_element().text() {
+            text_content.push_str(node);
+            text_content.push(' ');
+        }
+    }
+
+    let cleaned = text_content
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    if cleaned.is_empty() {
+        return Err("Could not extract any text from the provided URL.".to_string());
+    }
+
+    Ok(cleaned)
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JobParseResult {
+    pub details: JobDetails,
+    pub raw_description: String,
+}
+
 pub async fn parse_job_description(
     provider: &str,
     model: &str,
     api_key: &str,
     raw_jd: &str,
-) -> Result<JobDetails, String> {
+    job_url: Option<&str>,
+) -> Result<JobParseResult, String> {
+    let mut input_text = raw_jd.trim().to_string();
+
+    if input_text.is_empty() {
+        if let Some(url) = job_url {
+            input_text = fetch_url_content(url).await?;
+        } else {
+            return Err("Either a job description or a URL must be provided.".to_string());
+        }
+    }
+
     let model = model.trim();
-    match provider {
+    let details = match provider {
         "gemini" => {
             let client = gemini::Client::new(api_key).map_err(|e| e.to_string())?;
             let extractor = client.extractor::<JobDetails>(model).build();
             extractor
-                .extract(raw_jd)
+                .extract(&input_text)
                 .await
-                .map_err(|e| format!("Gemini AI Parsing Error: {}", e))
+                .map_err(|e| format!("Gemini AI Parsing Error: {}", e))?
         }
         "openai" => {
             let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
             let extractor = client.extractor::<JobDetails>(model).build();
             extractor
-                .extract(raw_jd)
+                .extract(&input_text)
                 .await
-                .map_err(|e| format!("OpenAI Parsing Error: {}", e))
+                .map_err(|e| format!("OpenAI Parsing Error: {}", e))?
         }
         "groq" => {
             let client = groq::Client::new(api_key).map_err(|e| e.to_string())?;
             let extractor = client.extractor::<JobDetails>(model).build();
             extractor
-                .extract(raw_jd)
+                .extract(&input_text)
                 .await
-                .map_err(|e| format!("Groq Parsing Error: {}", e))
+                .map_err(|e| format!("Groq Parsing Error: {}", e))?
         }
         "anthropic" => {
             let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
             let extractor = client.extractor::<JobDetails>(model).build();
             extractor
-                .extract(raw_jd)
+                .extract(&input_text)
                 .await
-                .map_err(|e| format!("Anthropic Parsing Error: {}", e))
+                .map_err(|e| format!("Anthropic Parsing Error: {}", e))?
         }
-        _ => Err(format!("Unsupported provider: {}", provider)),
-    }
+        _ => return Err(format!("Unsupported provider: {}", provider)),
+    };
+
+    Ok(JobParseResult {
+        details,
+        raw_description: input_text,
+    })
 }
 
 pub async fn tailor_latex_for_job(

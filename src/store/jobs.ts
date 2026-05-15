@@ -44,12 +44,17 @@ export const useJobsStore = defineStore('jobs', () => {
       const model = settingsStore.selectedAiModel;
 
       // 1. Parse Job via AI
-      const details: any = await invoke('parse_job', { 
+      const result: any = await invoke('parse_job', { 
         provider,
         model,
         apiKey, 
-        rawJd 
+        rawJd,
+        jobUrl: jobUrl.trim() || null
       });
+
+      const details = result.details;
+      const finalRawJd = result.raw_description || rawJd;
+
       // 2. Augment Data on Frontend
       const jobPayload: Job = {
         id: generateId(),
@@ -58,7 +63,7 @@ export const useJobsStore = defineStore('jobs', () => {
         work_model: details.work_model,
         employment_type: details.employment_type,
         status: 'Drafting',
-        raw_jd: rawJd.trim(),
+        raw_jd: finalRawJd.trim(),
         requirements: JSON.stringify(details.requirements || []),
         core_responsibilities: JSON.stringify(details.core_responsibilities || []),
         custom_instruction: '',

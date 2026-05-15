@@ -1,4 +1,4 @@
-use crate::ai::{self, JobDetails};
+use crate::ai::{self};
 use crate::commands::TailoredContent;
 use crate::AppState;
 use nanoid::nanoid;
@@ -31,8 +31,9 @@ pub async fn parse_job(
     model: String,
     api_key: String,
     raw_jd: String,
-) -> Result<JobDetails, String> {
-    ai::parse_job_description(&provider, &model, &api_key, &raw_jd).await
+    job_url: Option<String>,
+) -> Result<ai::JobParseResult, String> {
+    ai::parse_job_description(&provider, &model, &api_key, &raw_jd, job_url.as_deref()).await
 }
 
 #[tauri::command]
