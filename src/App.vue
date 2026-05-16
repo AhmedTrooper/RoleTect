@@ -4,6 +4,7 @@ import { Motion, AnimatePresence } from 'motion-v';
 import { open } from '@tauri-apps/plugin-shell';
 import Titlebar from './components/Titlebar.vue';
 import SplashLoader from './components/SplashLoader.vue';
+import CustomDialog from './components/CustomDialog.vue';
 import { useSettingsStore } from './store/settings';
 import { 
   Home, 
@@ -132,6 +133,9 @@ const handleExternalClick = (url: string) => {
       </router-view>
     </main>
   </div>
+
+  <!-- Global Bespoke Dialog System -->
+  <CustomDialog />
 </template>
 
 <style scoped>

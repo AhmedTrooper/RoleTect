@@ -620,5 +620,81 @@ pub fn init_db(app: &AppHandle) -> Result<Connection> {
         let _ = conn.execute("ALTER TABLE jobs ADD COLUMN base_cl_id TEXT REFERENCES base_cover_letters(id)", []);
     }
 
+    // --- 4. Final Flexible Status Migration ---
+    // Remove the rigid status CHECK constraint that blocks 'Joined' and other new statuses.
+    let table_sql: String = conn
+        .query_row(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_default();
+
+    if table_sql.contains("CHECK") || table_sql.contains("status IN") {
+        println!("Performing final status constraint removal migration...");
+        conn.execute_batch("
+            PRAGMA foreign_keys=OFF;
+            BEGIN TRANSACTION;
+            
+            -- Create the new flexible table
+            CREATE TABLE jobs_final (
+                id TEXT PRIMARY KEY,
+                company_name TEXT NOT NULL,
+                job_title TEXT NOT NULL,
+                work_model TEXT NOT NULL,
+                employment_type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Drafting',
+                raw_jd TEXT NOT NULL,
+                requirements TEXT,
+                core_responsibilities TEXT,
+                custom_instruction TEXT,
+                reference_name TEXT,
+                reference_email TEXT,
+                social_link TEXT,
+                job_url TEXT,
+                base_resume_id TEXT REFERENCES base_resumes(id),
+                base_cl_id TEXT REFERENCES base_cover_letters(id),
+                salary TEXT,
+                applied_date TEXT,
+                interview_date TEXT,
+                offer_date TEXT,
+                rejected_date TEXT,
+                joining_date TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Copy data using INSERT OR IGNORE and matching columns
+            INSERT INTO jobs_final (
+                id, company_name, job_title, work_model, employment_type, status, raw_jd, 
+                requirements, core_responsibilities, custom_instruction, reference_name, 
+                reference_email, social_link, job_url, base_resume_id, base_cl_id,
+                salary, applied_date, interview_date, offer_date, rejected_date, joining_date,
+                created_at, updated_at
+            ) 
+            SELECT 
+                id, company_name, job_title, 
+                COALESCE(work_model, 'Remote'), 
+                COALESCE(employment_type, 'Full-time'), 
+                status, raw_jd, 
+                requirements, core_responsibilities, custom_instruction, reference_name, 
+                reference_email, social_link, job_url, base_resume_id, base_cl_id,
+                salary, applied_date, interview_date, offer_date, rejected_date, joining_date,
+                created_at, updated_at
+            FROM jobs;
+
+            DROP TABLE jobs;
+            ALTER TABLE jobs_final RENAME TO jobs;
+            
+            -- Re-create the trigger for the new table
+            CREATE TRIGGER IF NOT EXISTS update_jobs_modtime_final 
+            AFTER UPDATE ON jobs 
+            BEGIN UPDATE jobs SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id; END;
+
+            COMMIT;
+            PRAGMA foreign_keys=ON;
+        ")?;
+    }
+
     Ok(conn)
 }

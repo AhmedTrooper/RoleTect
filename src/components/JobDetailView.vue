@@ -9,6 +9,7 @@ import { Motion, AnimatePresence } from 'motion-v';
 import { useSettingsStore } from '../store/settings';
 import { useResumesStore } from '../store/resumes';
 import { useCoverLettersStore } from '../store/cover_letters';
+import { useDialogStore } from '../store/dialog';
 import { useJobsStore, Job } from '../store/jobs';
 
 // Codemirror imports
@@ -52,6 +53,7 @@ const router = useRouter();
 const settingsStore = useSettingsStore();
 const resumesStore = useResumesStore();
 const clStore = useCoverLettersStore();
+const dialog = useDialogStore();
 const jobsStore = useJobsStore();
 
 const props = defineProps<{ id: string }>();
@@ -463,18 +465,30 @@ const updateStatus = async (newStatus: string) => {
   const today = new Date().toISOString().split('T')[0];
 
   try {
+    let datePrompt = '';
+    let metaKey = '';
+
     if (newStatus === 'Applied') {
-      metadata.applied_date = today;
+      datePrompt = 'Enter application date (YYYY-MM-DD):';
+      metaKey = 'applied_date';
     } else if (newStatus === 'Interviewing') {
-      metadata.interview_date = today;
+      datePrompt = 'Enter interview date (YYYY-MM-DD):';
+      metaKey = 'interview_date';
     } else if (newStatus === 'Offer') {
-      metadata.offer_date = today;
-      await message('Amazing! You received an offer. You can add the salary details in the job info section.', { title: 'Offer Received', kind: 'info' });
+      datePrompt = 'Enter offer received date (YYYY-MM-DD):';
+      metaKey = 'offer_date';
+      await dialog.showAlert('Amazing! You received an offer. You can add the salary details in the job info section.', 'Offer Received');
     } else if (newStatus === 'Rejected') {
-      metadata.rejected_date = today;
+      datePrompt = 'Enter rejection date (YYYY-MM-DD):';
+      metaKey = 'rejected_date';
     } else if (newStatus === 'Joined') {
-      const confirmed = await ask('Congratulations on the new role! Record today as your start date?', { title: 'Welcome Aboard!', kind: 'info' });
-      metadata.joining_date = confirmed ? today : today;
+      datePrompt = 'Enter start date (YYYY-MM-DD):';
+      metaKey = 'joining_date';
+    }
+
+    if (metaKey) {
+      const result = await dialog.showPrompt(datePrompt, today, 'Record Milestone');
+      metadata[metaKey] = result || today;
     }
 
     await jobsStore.updateJobStatus(props.id, newStatus, Object.keys(metadata).length > 0 ? metadata : undefined);
@@ -487,7 +501,7 @@ const updateStatus = async (newStatus: string) => {
 };
 
 const editSalary = async () => {
-  const result = window.prompt('Enter the salary (e.g. $120k/yr):', jobDetails.value?.salary || '');
+  const result = await dialog.showPrompt('Enter the salary (e.g. $120k/yr):', jobDetails.value?.salary || '', 'Update Salary');
 
   if (result !== null) {
     try {
@@ -500,10 +514,7 @@ const editSalary = async () => {
 };
 
 const deleteJob = async () => {
-  const confirmed = await ask('Are you sure you want to delete this job application? This action cannot be undone.', {
-    title: 'Confirm Deletion',
-    kind: 'warning'
-  });
+  const confirmed = await dialog.showConfirm('Are you sure you want to delete this job application? This action cannot be undone.', 'Confirm Deletion');
 
   if (!confirmed) return;
   

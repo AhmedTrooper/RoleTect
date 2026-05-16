@@ -5,6 +5,7 @@ import { save, message } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { Motion, AnimatePresence } from 'motion-v';
 import { useSettingsStore } from '../store/settings';
+import { useDialogStore } from '../store/dialog';
 import { 
   Hammer, 
   Download, 
@@ -22,6 +23,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
 
 const settingsStore = useSettingsStore();
+const dialog = useDialogStore();
 
 // Codemirror Extensions
 const extensions = [
@@ -114,7 +116,7 @@ const refineWithAi = async () => {
     await compilePdf();
   } catch (err: any) {
     console.error("AI Refinement Error:", err);
-    await message(err.toString(), { title: 'AI Refinement Failed', kind: 'error' });
+    await dialog.showAlert(err.toString(), 'AI Refinement Failed');
   } finally {
     isRefining.value = false;
   }
@@ -175,7 +177,7 @@ const fixWithAi = async () => {
     await compilePdf();
   } catch (err: any) {
     console.error("AI Fix Error:", err);
-    await message(err.toString(), { title: 'AI Fix Failed', kind: 'error' });
+    await dialog.showAlert(err.toString(), 'AI Fix Failed');
   } finally {
     isFixing.value = false;
   }
@@ -209,11 +211,11 @@ const downloadPdf = async () => {
         contentId: null
       });
 
-      await message('PDF downloaded successfully.', { title: 'Success', kind: 'info' });
+      await dialog.showAlert('PDF downloaded successfully.', 'Success');
     }
   } catch (err: any) {
     console.error("Download Error:", err);
-    await message(err.toString(), { title: 'Download Failed', kind: 'error' });
+    await dialog.showAlert(err.toString(), 'Download Failed');
   } finally {
     isDownloading.value = false;
   }

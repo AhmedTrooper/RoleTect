@@ -20,8 +20,10 @@ import { save as saveDialog, open as openDialog, ask, message } from '@tauri-app
 import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useDialogStore } from '../store/dialog';
 
 const store = useSettingsStore();
+const dialog = useDialogStore();
 
 // Tooltip State
 const activeTooltip = ref<string | null>(null);
@@ -50,7 +52,7 @@ const copyDemoTheme = async () => {
   
   try {
     await writeText(JSON.stringify(demoTheme, null, 2));
-    await message('Demo theme JSON copied to clipboard!', { title: 'Success', kind: 'info' });
+    await dialog.showAlert('Demo theme JSON copied to clipboard!', 'Success');
   } catch (err) {
     console.error('Failed to copy to clipboard:', err);
   }
@@ -94,9 +96,9 @@ const exportData = async () => {
 
 const handleImport = async (mode: 'merge' | 'overwrite') => {
   if (mode === 'overwrite') {
-    const confirmed = await ask(
+    const confirmed = await dialog.showConfirm(
       'This will DELETE all current jobs and resumes, replacing them with the backup. Are you sure?',
-      { title: 'CRITICAL: Overwrite Data', kind: 'warning' }
+      'CRITICAL: Overwrite Data'
     );
     if (!confirmed) return;
   }
@@ -113,7 +115,7 @@ const handleImport = async (mode: 'merge' | 'overwrite') => {
     const content = await readTextFile(path as string);
     const data = JSON.parse(content);
     await invoke('import_data', { data, mode });
-    await message(`Successfully ${mode === 'merge' ? 'synchronized' : 'restored'} your vault.`, { title: 'Import Successful' });
+    await dialog.showAlert(`Successfully ${mode === 'merge' ? 'synchronized' : 'restored'} your vault.`, 'Import Successful');
   } catch (error: any) {
     saveError.value = `Import Error: ${error.toString()}`;
   } finally {
@@ -342,18 +344,18 @@ const handleImportTheme = async () => {
     await store.importCustomTheme(customThemeJson.value);
     customThemeJson.value = '';
     isImportingTheme.value = false;
-    await message('Custom theme imported successfully.', { title: 'Theme Imported' });
+    await dialog.showAlert('Custom theme imported successfully.', 'Theme Imported');
   } catch (e: any) {
     themeError.value = e.message;
   }
 };
 
 const handleDeleteTheme = async (id: string) => {
-  const confirmed = await ask('Are you sure you want to delete this custom theme?', { title: 'Delete Theme', kind: 'warning' });
+  const confirmed = await dialog.showConfirm('Are you sure you want to delete this custom theme?', 'Delete Theme');
   if (confirmed) {
     try {
       await store.deleteCustomTheme(id);
-      await message('Theme deleted successfully.', { title: 'Theme Deleted' });
+      await dialog.showAlert('Theme deleted successfully.', 'Theme Deleted');
     } catch (e: any) {
       saveError.value = e.toString();
     }
@@ -370,7 +372,7 @@ const showThemeSchema = () => {
     ...
   }
 }`;
-  message(schema, { title: 'Theme Schema' });
+  dialog.showAlert(schema, 'Theme Schema');
 };
 
 const handleSave = async () => {
