@@ -125,12 +125,79 @@ pub fn init_db(app: &AppHandle) -> Result<Connection> {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (job_id) REFERENCES jobs(id)
         );
+
+        -- 7. Themes Table
+        CREATE TABLE IF NOT EXISTS themes (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            config TEXT NOT NULL,
+            is_builtin BOOLEAN DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
         "
-    )?;
+        )?;
 
-    // --- MIGRATIONS ---
+        // --- MIGRATIONS ---
 
-    // 1. Check if we need to remove CHECK constraints from 'jobs' (for flexibility with Temporary/Internship/etc.)
+        // 1. Check if themes table is empty and insert default theme if so
+        let theme_count: i32 = conn.query_row("SELECT COUNT(*) FROM themes", [], |row| row.get(0))?;
+        if theme_count == 0 {
+            let github_dark = r##" {
+            "--bg": "#0d0f14",
+            "--bg-accent": "#11141d",
+            "--surface": "#161923",
+            "--surface-soft": "#1d222e",
+            "--ink": "#e6edf3",
+            "--muted": "#8b949e",
+            "--line": "#30363d",
+            "--accent": "#238636",
+            "--accent-soft": "rgba(35, 134, 54, 0.15)",
+            "--warning": "#f85149"
+        } "##;
+
+            conn.execute(
+                "INSERT INTO themes (id, name, config, is_builtin) VALUES ('github-dark', 'GitHub Dark', ?1, 1)",
+                [github_dark],
+            )?;
+
+            let dracula = r##" {
+            "--bg": "#282a36",
+            "--bg-accent": "#1e1f29",
+            "--surface": "#44475a",
+            "--surface-soft": "#6272a4",
+            "--ink": "#f8f8f2",
+            "--muted": "#6272a4",
+            "--line": "#44475a",
+            "--accent": "#bd93f9",
+            "--accent-soft": "rgba(189, 147, 249, 0.15)",
+            "--warning": "#ff5555"
+        } "##;
+
+            conn.execute(
+                "INSERT INTO themes (id, name, config, is_builtin) VALUES ('dracula', 'Dracula', ?1, 1)",
+                [dracula],
+            )?;
+
+            let nord = r##" {
+            "--bg": "#2e3440",
+            "--bg-accent": "#242933",
+            "--surface": "#3b4252",
+            "--surface-soft": "#434c5e",
+            "--ink": "#d8dee9",
+            "--muted": "#4c566a",
+            "--line": "#3b4252",
+            "--accent": "#88c0d0",
+            "--accent-soft": "rgba(136, 192, 208, 0.15)",
+            "--warning": "#bf616a"
+        } "##;
+
+            conn.execute(
+                "INSERT INTO themes (id, name, config, is_builtin) VALUES ('nord', 'Nord', ?1, 1)",
+                [nord],
+            )?;
+        }
+
+        // 2. Check if we need to remove CHECK constraints from 'jobs' (for flexibility with Temporary/Internship/etc.)
     let table_sql: String = conn
         .query_row(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs'",

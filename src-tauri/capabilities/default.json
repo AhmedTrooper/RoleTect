@@ -15,6 +15,7 @@
     "opener:default",
     "stronghold:default",
     "clipboard-manager:default",
+    "clipboard-manager:allow-write-text",
     "fs:default",
     "fs:allow-appdata-write",
     "fs:allow-appdata-write-recursive",

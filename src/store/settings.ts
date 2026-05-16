@@ -5,14 +5,90 @@ import { appDataDir, join } from '@tauri-apps/api/path';
 import { readTextFile, writeTextFile, remove, exists } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 
+export interface Theme {
+  id: string;
+  name: string;
+  config: string;
+  is_builtin: boolean;
+}
+
 export const useSettingsStore = defineStore('settings', () => {
   const hasSecureKey = ref(false);
   const selectedAiProvider = ref('openai'); 
   const selectedAiModel = ref('gpt-4o');
   
+  const availableThemes = ref<Theme[]>([]);
+  const activeThemeId = ref('github-dark');
+
   // Cache Stronghold and Store instances
   const strongholdInstance = shallowRef<Stronghold | null>(null);
   const storeInstance = shallowRef<Store | null>(null);
+
+  const applyTheme = (themeConfig: string) => {
+    try {
+      const colors = JSON.parse(themeConfig);
+      const root = document.documentElement;
+      Object.entries(colors).forEach(([key, value]) => {
+        root.style.setProperty(key, value as string);
+      });
+    } catch (e) {
+      console.error("Failed to apply theme:", e);
+    }
+  };
+
+  const loadThemes = async () => {
+    try {
+      availableThemes.value = await invoke<Theme[]>('get_all_themes');
+      const active: Theme = await invoke('get_active_theme');
+      activeThemeId.value = active.id;
+      applyTheme(active.config);
+    } catch (e) {
+      console.error("Error loading themes:", e);
+    }
+  };
+
+  const setTheme = async (themeId: string) => {
+    try {
+      await invoke('save_active_theme', { themeId });
+      activeThemeId.value = themeId;
+      const theme = availableThemes.value.find(t => t.id === themeId);
+      if (theme) {
+        applyTheme(theme.config);
+      }
+    } catch (e) {
+      console.error("Error setting theme:", e);
+    }
+  };
+
+  const importCustomTheme = async (themeJson: string) => {
+    try {
+      const parsed = JSON.parse(themeJson);
+      if (!parsed.name || !parsed.colors) throw new Error("Invalid theme format. Missing 'name' or 'colors'.");
+      
+      // Create a unique slug: name-lowercase + random suffix
+      const slugBase = parsed.name.toLowerCase().replace(/\s+/g, '-');
+      const randomSuffix = Math.random().toString(36).substring(2, 6);
+      const id = `${slugBase}-${randomSuffix}`;
+      
+      const config = JSON.stringify(parsed.colors);
+      
+      await invoke('save_custom_theme', { id, name: parsed.name, config });
+      await loadThemes();
+    } catch (e) {
+      console.error("Error importing theme:", e);
+      throw e;
+    }
+  };
+
+  const deleteCustomTheme = async (themeId: string) => {
+    try {
+      await invoke('delete_theme', { id: themeId });
+      await loadThemes();
+    } catch (e) {
+      console.error("Error deleting theme:", e);
+      throw e;
+    }
+  };
 
   const generateVaultPassword = () => {
     const bytes = new Uint8Array(32);
@@ -135,6 +211,7 @@ export const useSettingsStore = defineStore('settings', () => {
       selectedAiModel.value = config.model;
 
       await loadProviderKeyStatus(selectedAiProvider.value);
+      await loadThemes();
     } catch (e) {
       console.error("Error loading settings:", e);
       hasSecureKey.value = false;
@@ -145,6 +222,11 @@ export const useSettingsStore = defineStore('settings', () => {
     hasSecureKey, 
     selectedAiProvider,
     selectedAiModel, 
+    availableThemes,
+    activeThemeId,
+    setTheme,
+    importCustomTheme,
+    deleteCustomTheme,
     saveApiKey, 
     getDecryptedKey,
     loadProviderKeyStatus,

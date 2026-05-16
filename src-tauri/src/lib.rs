@@ -116,7 +116,12 @@ pub fn run() {
             commands::data::export_all_data,
             commands::data::import_data,
             commands::downloads::record_download,
-            commands::downloads::get_downloads
+            commands::downloads::get_downloads,
+            commands::settings::get_all_themes,
+            commands::settings::save_custom_theme,
+            commands::settings::delete_theme,
+            commands::settings::save_active_theme,
+            commands::settings::get_active_theme
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

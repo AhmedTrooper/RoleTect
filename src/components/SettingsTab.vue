@@ -1,16 +1,61 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { useSettingsStore } from '../store/settings';
-import { CheckCircle, Info, Save, RotateCcw, Download, Database, Upload, RefreshCw } from '@lucide/vue';
+import { 
+  CheckCircle, 
+  Info, 
+  Save, 
+  RotateCcw, 
+  Download, 
+  Database, 
+  Upload, 
+  RefreshCw,
+  Palette,
+  Plus,
+  Trash2,
+  X
+} from '@lucide/vue';
 import { Motion, AnimatePresence } from 'motion-v';
 import { invoke } from '@tauri-apps/api/core';
 import { save as saveDialog, open as openDialog, ask, message } from '@tauri-apps/plugin-dialog';
 import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+
 const store = useSettingsStore();
 
 // Tooltip State
 const activeTooltip = ref<string | null>(null);
+
+// Theme State
+const isImportingTheme = ref(false);
+const customThemeJson = ref('');
+const themeError = ref('');
+
+const copyDemoTheme = async () => {
+  const demoTheme = {
+    name: "Surgical Neon",
+    colors: {
+      "--bg": "#0a0a0a",
+      "--bg-accent": "#121212",
+      "--surface": "#1a1a1a",
+      "--surface-soft": "#242424",
+      "--ink": "#ffffff",
+      "--muted": "#666666",
+      "--line": "#333333",
+      "--accent": "#00ff9d",
+      "--accent-soft": "rgba(0, 255, 157, 0.1)",
+      "--warning": "#ff3e3e"
+    }
+  };
+  
+  try {
+    await writeText(JSON.stringify(demoTheme, null, 2));
+    await message('Demo theme JSON copied to clipboard!', { title: 'Success', kind: 'info' });
+  } catch (err) {
+    console.error('Failed to copy to clipboard:', err);
+  }
+};
 
 // --- 1. Draft State (Local only) ---
 const providerInput = ref('');
@@ -287,6 +332,48 @@ watch(providerInput, async (newProvider) => {
   await store.loadProviderKeyStatus(newProvider);
 });
 
+const handleThemeChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  await store.setTheme(target.value);
+};
+
+const handleImportTheme = async () => {
+  try {
+    themeError.value = '';
+    await store.importCustomTheme(customThemeJson.value);
+    customThemeJson.value = '';
+    isImportingTheme.value = false;
+    await message('Custom theme imported successfully.', { title: 'Theme Imported' });
+  } catch (e: any) {
+    themeError.value = e.message;
+  }
+};
+
+const handleDeleteTheme = async (id: string) => {
+  const confirmed = await ask('Are you sure you want to delete this custom theme?', { title: 'Delete Theme', kind: 'warning' });
+  if (confirmed) {
+    try {
+      await store.deleteCustomTheme(id);
+      await message('Theme deleted successfully.', { title: 'Theme Deleted' });
+    } catch (e: any) {
+      saveError.value = e.toString();
+    }
+  }
+};
+
+const showThemeSchema = () => {
+  const schema = `Theme JSON should follow this format:
+{
+  "name": "My Theme",
+  "colors": {
+    "--bg": "#...",
+    "--bg-accent": "#...",
+    ...
+  }
+}`;
+  message(schema, { title: 'Theme Schema' });
+};
+
 const handleSave = async () => {
   isSaving.value = true;
   saveError.value = '';
@@ -320,6 +407,70 @@ const handleSave = async () => {
     </div>
 
     <div class="settings-grid">
+      <!-- UI Customization -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="title-row">
+            <h3>Visual Persona</h3>
+            <div class="header-btns">
+              <button class="text-btn secondary" @click="copyDemoTheme">
+                <Download :size="14" /> Copy Demo
+              </button>
+              <button class="text-btn" @click="isImportingTheme = !isImportingTheme">
+                <Plus :size="14" /> {{ isImportingTheme ? 'Cancel' : 'Import Theme' }}
+              </button>
+            </div>
+          </div>
+          <p>Switch between built-in themes or import your own surgical palette.</p>
+        </div>
+
+        <div class="theme-selector-row">
+          <div class="input-group">
+            <label>Active Theme</label>
+            <div class="theme-picker-wrapper">
+              <Palette :size="16" class="picker-icon" />
+              <select :value="store.activeThemeId" @change="handleThemeChange" class="custom-select with-icon">
+                <option v-for="theme in store.availableThemes" :key="theme.id" :value="theme.id">
+                  {{ theme.name }} {{ theme.is_builtin ? '(Built-in)' : '' }}
+                </option>
+              </select>
+            </div>
+          </div>
+          
+          <button 
+            v-if="!store.availableThemes.find(t => t.id === store.activeThemeId)?.is_builtin"
+            class="delete-theme-btn"
+            @click="handleDeleteTheme(store.activeThemeId)"
+          >
+            <Trash2 :size="16" />
+          </button>
+        </div>
+
+        <AnimatePresence>
+          <Motion
+            v-if="isImportingTheme"
+            :initial="{ height: 0, opacity: 0 }"
+            :animate="{ height: 'auto', opacity: 1 }"
+            :exit="{ height: 0, opacity: 0 }"
+            class="import-theme-area"
+          >
+            <div class="import-header">
+              <label>Theme JSON Configuration</label>
+              <button class="help-link-btn" @click.prevent="showThemeSchema">View Schema</button>
+            </div>
+            <textarea 
+              v-model="customThemeJson" 
+              placeholder='{ "name": "Deep Ocean", "colors": { "--bg": "#000b1e", ... } }'
+              class="theme-textarea"
+            ></textarea>
+            <div class="import-actions-row">
+              <span v-if="themeError" class="error-inline">{{ themeError }}</span>
+              <button class="btn-import-confirm" @click="handleImportTheme">Import & Apply</button>
+            </div>
+          </Motion>
+        </AnimatePresence>
+      </div>
+
       <!-- Intelligence Engine -->
       <div class="settings-card">
         <div class="card-header">
@@ -538,10 +689,30 @@ const handleSave = async () => {
 
 .title-row { display: flex; justify-content: space-between; align-items: center; }
 
+.header-btns {
+  display: flex;
+  gap: 12px;
+}
+
 .text-btn {
   background: none; border: none;
-  color: var(--warning); font-weight: 700; font-size: 0.75rem;
+  color: var(--accent); font-weight: 700; font-size: 0.75rem;
   text-transform: uppercase; cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.text-btn.secondary {
+  color: var(--muted);
+}
+
+.text-btn.secondary:hover {
+  color: var(--ink);
+}
+
+.text-btn:hover {
+  opacity: 0.8;
 }
 
 .input-row { display: flex; gap: 20px; margin-top: 20px; }
@@ -608,6 +779,113 @@ label {
 
 .custom-select {
   cursor: pointer;
+}
+
+.theme-selector-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.theme-picker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.picker-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.custom-select.with-icon {
+  padding-left: 36px;
+}
+
+.delete-theme-btn {
+  height: 42px;
+  width: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.2);
+  color: var(--warning);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.delete-theme-btn:hover {
+  background: var(--warning);
+  color: white;
+  border-color: var(--warning);
+}
+
+.import-theme-area {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.import-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.help-link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+}
+
+.theme-textarea {
+  width: 100%;
+  height: 120px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+.import-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-import-confirm {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error-inline {
+  color: var(--warning);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .export-row {
