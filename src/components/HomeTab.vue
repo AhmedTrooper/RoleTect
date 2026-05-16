@@ -5,7 +5,7 @@ import { useSettingsStore } from '../store/settings';
 import { useJobsStore, Job } from '../store/jobs';
 import { Motion, AnimatePresence } from 'motion-v';
 
-import { Activity, Plus, FileText, LayoutGrid } from '@lucide/vue';
+import { Activity, Plus, FileText, LayoutGrid, Mail } from '@lucide/vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -74,18 +74,33 @@ watch(() => route.fullPath, async () => {
             </Motion>
           </AnimatePresence>
         </div>
-        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'templates'" @mouseleave="activeTooltip = null">
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'resumes'" @mouseleave="activeTooltip = null">
           <button class="btn-secondary" @click="$router.push('/resumes')"><FileText :size="18" /></button>
           <AnimatePresence>
             <Motion
-              v-if="activeTooltip === 'templates'"
+              v-if="activeTooltip === 'resumes'"
               :initial="{ opacity: 0, y: 5, scale: 0.9 }"
               :animate="{ opacity: 1, y: 0, scale: 1 }"
               :exit="{ opacity: 0, y: 5, scale: 0.9 }"
               :transition="{ duration: 0.15 }"
               class="flying-message"
             >
-              Manage Templates
+              Resume Templates
+            </Motion>
+          </AnimatePresence>
+        </div>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'cls'" @mouseleave="activeTooltip = null">
+          <button class="btn-secondary" @click="$router.push('/cover-letters')"><Mail :size="18" /></button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'cls'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="flying-message"
+            >
+              CL Templates
             </Motion>
           </AnimatePresence>
         </div>
@@ -155,7 +170,7 @@ watch(() => route.fullPath, async () => {
   text-transform: uppercase;
   color: var(--muted);
 }
-.status-icon { color: #238636; }
+.status-icon { color: var(--accent); }
 
 .main-title {
   font-size: 2rem;
