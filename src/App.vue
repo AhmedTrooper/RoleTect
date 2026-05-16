@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Motion, AnimatePresence } from 'motion-v';
 import { open } from '@tauri-apps/plugin-shell';
 import Titlebar from './components/Titlebar.vue';
+import SplashLoader from './components/SplashLoader.vue';
+import { useSettingsStore } from './store/settings';
 import { 
   Home, 
   Briefcase, 
@@ -30,7 +32,26 @@ const externalLinks = [
   { url: 'https://www.youtube.com/@AhmedTrooper', label: 'YouTube', icon: Video },
 ];
 
+const settingsStore = useSettingsStore();
 const activeTooltip = ref<string | null>(null);
+const isAppLoading = ref(true);
+
+onMounted(async () => {
+  try {
+    // 1. Minimum delay for smooth transition
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    
+    // 2. Load settings (database, stronghold, etc.)
+    await settingsStore.loadSettings();
+    
+    // 3. Optional: Finalizing phase
+    await new Promise(resolve => setTimeout(resolve, 500));
+  } catch (error) {
+    console.error('Initialization error:', error);
+  } finally {
+    isAppLoading.value = false;
+  }
+});
 
 const handleExternalClick = (url: string) => {
   open(url).catch(err => console.error('Failed to open URL:', err));
@@ -38,6 +59,10 @@ const handleExternalClick = (url: string) => {
 </script>
 
 <template>
+  <AnimatePresence>
+    <SplashLoader v-if="isAppLoading" key="loader" />
+  </AnimatePresence>
+
   <Titlebar />
   <div class="app-container">
     <aside class="sidebar">
