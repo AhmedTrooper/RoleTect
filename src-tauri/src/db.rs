@@ -49,14 +49,14 @@ pub fn init_db(app: &AppHandle) -> Result<Connection> {
             AFTER UPDATE ON base_cover_letters 
             BEGIN UPDATE base_cover_letters SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id; END;
 
-        -- 3. Jobs Table
+        -- 3. Jobs Table (Flexible Schema)
         CREATE TABLE IF NOT EXISTS jobs (
             id TEXT PRIMARY KEY,
             company_name TEXT NOT NULL,
             job_title TEXT NOT NULL,
             work_model TEXT DEFAULT 'Remote',
             employment_type TEXT DEFAULT 'Full-time',
-            status TEXT CHECK(status IN ('Drafting', 'Applied', 'Interviewing', 'Offer', 'Rejected')) DEFAULT 'Drafting',
+            status TEXT NOT NULL DEFAULT 'Drafting',
             raw_jd TEXT NOT NULL,
             requirements TEXT,
             core_responsibilities TEXT,
@@ -67,6 +67,12 @@ pub fn init_db(app: &AppHandle) -> Result<Connection> {
             job_url TEXT,
             base_resume_id TEXT,
             base_cl_id TEXT,
+            salary TEXT,
+            applied_date TEXT,
+            interview_date TEXT,
+            offer_date TEXT,
+            rejected_date TEXT,
+            joining_date TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (base_resume_id) REFERENCES base_resumes(id),

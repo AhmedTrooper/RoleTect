@@ -16,7 +16,7 @@ import {
 } from '@lucide/vue';
 import { Motion, AnimatePresence } from 'motion-v';
 import { invoke } from '@tauri-apps/api/core';
-import { save as saveDialog, open as openDialog, ask, message } from '@tauri-apps/plugin-dialog';
+import { save as saveDialog, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';

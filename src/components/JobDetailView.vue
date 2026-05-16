@@ -469,26 +469,27 @@ const updateStatus = async (newStatus: string) => {
     let metaKey = '';
 
     if (newStatus === 'Applied') {
-      datePrompt = 'Enter application date (YYYY-MM-DD):';
+      datePrompt = 'Select application date:';
       metaKey = 'applied_date';
     } else if (newStatus === 'Interviewing') {
-      datePrompt = 'Enter interview date (YYYY-MM-DD):';
+      datePrompt = 'Select interview date:';
       metaKey = 'interview_date';
     } else if (newStatus === 'Offer') {
-      datePrompt = 'Enter offer received date (YYYY-MM-DD):';
+      datePrompt = 'Select offer received date:';
       metaKey = 'offer_date';
       await dialog.showAlert('Amazing! You received an offer. You can add the salary details in the job info section.', 'Offer Received');
     } else if (newStatus === 'Rejected') {
-      datePrompt = 'Enter rejection date (YYYY-MM-DD):';
+      datePrompt = 'Select rejection date:';
       metaKey = 'rejected_date';
     } else if (newStatus === 'Joined') {
-      datePrompt = 'Enter start date (YYYY-MM-DD):';
+      datePrompt = 'Select start date:';
       metaKey = 'joining_date';
     }
 
     if (metaKey) {
-      const result = await dialog.showPrompt(datePrompt, today, 'Record Milestone');
-      metadata[metaKey] = result || today;
+      const result = await dialog.showDatePicker(datePrompt, today, 'Record Milestone');
+      if (result === null) return; // User cancelled
+      metadata[metaKey] = result;
     }
 
     await jobsStore.updateJobStatus(props.id, newStatus, Object.keys(metadata).length > 0 ? metadata : undefined);
@@ -668,29 +669,40 @@ const deleteJob = async () => {
             </select>
           </div>
 
-          <!-- Milestones Section -->
-          <div class="milestones-section" v-if="jobDetails?.applied_date || jobDetails?.salary || jobDetails?.joining_date">
-            <div class="milestone-row" v-if="jobDetails?.applied_date">
-              <span class="milestone-label">Applied</span>
+          <!-- Milestones Section (Context Aware) -->
+          <div class="milestones-section" v-if="jobDetails?.status !== 'Drafting'">
+            <!-- Show Applied Date only if Applied -->
+            <div class="milestone-row" v-if="jobDetails?.status === 'Applied' && jobDetails?.applied_date">
+              <span class="milestone-label">Applied On</span>
               <span class="milestone-value">{{ jobDetails.applied_date }}</span>
             </div>
-            <div class="milestone-row" v-if="jobDetails?.interview_date">
-              <span class="milestone-label">Interview</span>
+
+            <!-- Show Interview Date only if Interviewing -->
+            <div class="milestone-row" v-if="jobDetails?.status === 'Interviewing' && jobDetails?.interview_date">
+              <span class="milestone-label">Interview On</span>
               <span class="milestone-value">{{ jobDetails.interview_date }}</span>
             </div>
-            <div class="milestone-row" v-if="jobDetails?.offer_date">
+
+            <!-- Show Offer Date only if Offer Recv -->
+            <div class="milestone-row" v-if="jobDetails?.status === 'Offer' && jobDetails?.offer_date">
               <span class="milestone-label">Offer Recv</span>
               <span class="milestone-value">{{ jobDetails.offer_date }}</span>
             </div>
-            <div class="milestone-row" v-if="jobDetails?.rejected_date">
-              <span class="milestone-label">Rejected</span>
+
+            <!-- Show Rejected Date only if Rejected -->
+            <div class="milestone-row" v-if="jobDetails?.status === 'Rejected' && jobDetails?.rejected_date">
+              <span class="milestone-label">Rejected On</span>
               <span class="milestone-value">{{ jobDetails.rejected_date }}</span>
             </div>
-            <div class="milestone-row" v-if="jobDetails?.joining_date">
+
+            <!-- Show Start Date only if Joined -->
+            <div class="milestone-row" v-if="jobDetails?.status === 'Joined' && jobDetails?.joining_date">
               <span class="milestone-label">Start Date</span>
               <span class="milestone-value">{{ jobDetails.joining_date }}</span>
             </div>
-            <div class="milestone-row">
+
+            <!-- Salary (Shown for Offer or Joined) -->
+            <div class="milestone-row" v-if="jobDetails?.status === 'Offer' || jobDetails?.status === 'Joined'">
               <span class="milestone-label">Salary</span>
               <button 
                 v-if="jobDetails?.salary" 
@@ -701,13 +713,12 @@ const deleteJob = async () => {
                 {{ jobDetails.salary }}
               </button>
               <button 
-                v-else-if="jobDetails?.status === 'Offer' || jobDetails?.status === 'Joined'"
+                v-else
                 class="edit-salary-btn" 
                 @click="editSalary"
               >
                 + Add Salary
               </button>
-              <span v-else class="milestone-value">—</span>
             </div>
           </div>
         </div>
