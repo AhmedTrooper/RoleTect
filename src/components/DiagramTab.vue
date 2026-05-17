@@ -574,18 +574,26 @@ const initializePanZoom = () => {
   }
 };
 
+// Rendering Logic
+let renderTimeout: ReturnType<typeof setTimeout>;
+
 // Auto-save logic
 watch(diagramCode, () => {
   isDirty.value = true;
+  if (settingsStore.isAutoCompileEnabled) {
+    clearTimeout(renderTimeout);
+    renderTimeout = setTimeout(async () => {
+      await renderContent();
+      await saveActiveFile();
+    }, 800);
+  }
 });
 
 const handleBlur = async () => {
   if (isDirty.value) {
+    await saveActiveFile();
     if (settingsStore.isAutoCompileEnabled) {
-      await saveActiveFile();
       await renderContent();
-    } else {
-      await saveActiveFile();
     }
   }
 };
@@ -1460,7 +1468,36 @@ const activeFileName = computed(() => {
   display: block;
   overflow-y: auto;
   padding: 24px;
-  background: #0d1117;
+  background: var(--bg-accent);
+}
+
+:deep(.markdown-body) {
+  background: transparent !important;
+  color: var(--ink) !important;
+  font-family: var(--font-family) !important;
+}
+
+:deep(.markdown-body p), :deep(.markdown-body li), :deep(.markdown-body span) {
+  color: var(--ink) !important;
+}
+
+:deep(.markdown-body h1), :deep(.markdown-body h2), :deep(.markdown-body h3), :deep(.markdown-body h4), :deep(.markdown-body h5), :deep(.markdown-body h6) {
+  color: var(--ink) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+:deep(.markdown-body pre) {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+}
+
+:deep(.markdown-body code) {
+  color: var(--accent) !important;
+  background-color: var(--surface) !important;
+}
+
+:deep(.markdown-body a) {
+  color: var(--accent) !important;
 }
 
 .svg-container {

@@ -58,7 +58,7 @@ const handleParse = async () => {
             :animate="{ opacity: 1, y: 0, scale: 1 }"
             :exit="{ opacity: 0, y: 5, scale: 0.9 }"
             :transition="{ duration: 0.15 }"
-            class="flying-message header-tooltip"
+            class="floating-message tooltip-bottom-right"
           >
             Back to Home
           </Motion>
@@ -137,7 +137,7 @@ const handleParse = async () => {
               :animate="{ opacity: 1, y: 0, scale: 1 }"
               :exit="{ opacity: 0, y: 5, scale: 0.9 }"
               :transition="{ duration: 0.15 }"
-              class="flying-message"
+              class="floating-message tooltip-top-left"
             >
               {{ jobsStore.isLoading ? 'PARSING...' : 'RUN EXTRACTION' }}
             </Motion>
@@ -177,13 +177,10 @@ const handleParse = async () => {
   align-items: center;
 }
 
-.flying-message {
+.floating-message {
   position: absolute;
-  bottom: 140%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: white;
+  background: var(--surface-soft);
+  color: var(--ink);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.65rem;
@@ -192,20 +189,8 @@ const handleParse = async () => {
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 1px solid var(--line);
 }
-
-.flying-message::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: var(--accent);
-}
-
-.header-tooltip { bottom: auto; top: 140%; }
-.header-tooltip::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: var(--accent); }
 
 .workspace {
   flex: 1;

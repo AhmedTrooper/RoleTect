@@ -68,7 +68,7 @@ watch(() => route.fullPath, async () => {
               :animate="{ opacity: 1, y: 0, scale: 1 }"
               :exit="{ opacity: 0, y: 5, scale: 0.9 }"
               :transition="{ duration: 0.15 }"
-              class="flying-message"
+              class="floating-message tooltip-top"
             >
               New Application
             </Motion>
@@ -83,7 +83,7 @@ watch(() => route.fullPath, async () => {
               :animate="{ opacity: 1, y: 0, scale: 1 }"
               :exit="{ opacity: 0, y: 5, scale: 0.9 }"
               :transition="{ duration: 0.15 }"
-              class="flying-message"
+              class="floating-message tooltip-top"
             >
               Resume Templates
             </Motion>
@@ -98,7 +98,7 @@ watch(() => route.fullPath, async () => {
               :animate="{ opacity: 1, y: 0, scale: 1 }"
               :exit="{ opacity: 0, y: 5, scale: 0.9 }"
               :transition="{ duration: 0.15 }"
-              class="flying-message"
+              class="floating-message tooltip-top"
             >
               CL Templates
             </Motion>
@@ -119,7 +119,7 @@ watch(() => route.fullPath, async () => {
               :animate="{ opacity: 1, y: 0, scale: 1 }"
               :exit="{ opacity: 0, y: 5, scale: 0.9 }"
               :transition="{ duration: 0.15 }"
-              class="flying-message list-tooltip"
+              class="floating-message tooltip-bottom-left"
             >
               All Applications
             </Motion>
@@ -191,45 +191,6 @@ watch(() => route.fullPath, async () => {
 .btn-tooltip-wrapper {
   position: relative;
   display: flex;
-}
-
-.flying-message {
-  position: absolute;
-  bottom: 140%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.flying-message::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: var(--accent);
-}
-
-.list-tooltip {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-
-.list-tooltip::after {
-  left: auto;
-  right: 8px;
-  transform: none;
 }
 
 .btn-primary, .btn-secondary {

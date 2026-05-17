@@ -74,7 +74,7 @@ const handleCreateCl = async () => {
             :animate="{ opacity: 1, y: 0, scale: 1 }"
             :exit="{ opacity: 0, y: 5, scale: 0.9 }"
             :transition="{ duration: 0.15 }"
-            class="flying-message"
+            class="flying-message tooltip-bottom-left"
           >
             New Template
           </Motion>
@@ -127,7 +127,7 @@ const handleCreateCl = async () => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="flying-message tooltip-top"
               >
                 {{ isCreating ? 'Initializing...' : 'Initialize Template' }}
               </Motion>
@@ -156,7 +156,7 @@ const handleCreateCl = async () => {
             :animate="{ opacity: 1, y: 0, scale: 1 }"
             :exit="{ opacity: 0, y: 5, scale: 0.9 }"
             :transition="{ duration: 0.15 }"
-            class="flying-message"
+            class="flying-message tooltip-top"
           >
             Initialize First Template
           </Motion>
@@ -170,11 +170,9 @@ const handleCreateCl = async () => {
         :key="cl.id"
         class="resume-card"
         @click="navigateToCl(cl.id)"
-        @mouseenter="activeTooltip = cl.id"
-        @mouseleave="activeTooltip = null"
       >
         <div class="resume-card-top">
-          <div class="icon-box">
+          <div class="icon-box" @mouseenter="activeTooltip = cl.id" @mouseleave="activeTooltip = null">
             <Mail :size="24" />
             <AnimatePresence>
               <Motion
@@ -183,7 +181,7 @@ const handleCreateCl = async () => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="flying-message tooltip-top"
               >
                 Click to Edit
               </Motion>
@@ -251,33 +249,6 @@ const handleCreateCl = async () => {
 .btn-tooltip-wrapper {
   position: relative;
   display: flex;
-}
-
-.flying-message {
-  position: absolute;
-  bottom: 140%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.flying-message::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: var(--accent);
 }
 
 .error-banner {

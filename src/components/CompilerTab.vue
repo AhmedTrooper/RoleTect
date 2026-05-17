@@ -33,7 +33,8 @@ import {
   Save,
   Star,
   Layout,
-  BookOpen
+  BookOpen,
+  Info
 } from '@lucide/vue';
 
 // Codemirror imports
@@ -87,8 +88,7 @@ const editorContainer = ref<HTMLElement | null>(null);
 const isLoadingWorkspace = ref(false);
 
 const isTemplatesVisible = ref(false);
-
-// Tooltip State
+const activeTooltip = ref<string | null>(null);
 
 const resumeTemplates = [
   {
@@ -659,59 +659,138 @@ const activeFileName = computed(() => {
       </div>
       
       <div class="header-actions">
-        <button class="action-btn" @click="isTemplatesVisible = true">
-          <BookOpen :size="16" />
-          <span>Templates</span>
-        </button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'templates'" @mouseleave="activeTooltip = null">
+          <button class="action-btn" @click="isTemplatesVisible = true">
+            <BookOpen :size="16" />
+          </button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'templates'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-bottom-left"
+            >
+              Gallery
+            </Motion>
+          </AnimatePresence>
+        </div>
 
         <div class="divider-v"></div>
 
-        <label class="auto-compile-toggle">
-          <input 
-            type="checkbox" 
-            :checked="settingsStore.isAutoCompileEnabled"
-            @change="settingsStore.setAutoCompile(($event.target as HTMLInputElement).checked)"
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'auto-compile'" @mouseleave="activeTooltip = null">
+          <label class="auto-compile-toggle">
+            <input 
+              type="checkbox" 
+              :checked="settingsStore.isAutoCompileEnabled"
+              @change="settingsStore.setAutoCompile(($event.target as HTMLInputElement).checked)"
+            >
+            <Info :size="12" class="info-icon" />
+          </label>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'auto-compile'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-bottom-left"
+            >
+              Auto Compile on Blur
+            </Motion>
+          </AnimatePresence>
+        </div>
+        
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'save'" @mouseleave="activeTooltip = null">
+          <button 
+            v-if="isDirty"
+            class="action-btn save-btn"
+            @click="saveActiveFile"
           >
-          <span>Auto Compile</span>
-        </label>
+            <Save :size="16" />
+          </button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'save' && isDirty"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-bottom-left"
+            >
+              Save Changes
+            </Motion>
+          </AnimatePresence>
+        </div>
         
-        <button 
-          v-if="isDirty"
-          class="action-btn save-btn"
-          @click="saveActiveFile"
-        >
-          <Save :size="16" />
-          <span>Save</span>
-        </button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'ai-fix'" @mouseleave="activeTooltip = null">
+          <button 
+            v-if="compilationError" 
+            class="action-btn ai-btn" 
+            @click="fixWithAi" 
+            :disabled="isFixing"
+          >
+            <Wand2 :size="16" />
+          </button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'ai-fix' && compilationError"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-bottom-left"
+            >
+              Fix with AI
+            </Motion>
+          </AnimatePresence>
+        </div>
         
-        <button 
-          v-if="compilationError" 
-          class="action-btn ai-btn" 
-          @click="fixWithAi" 
-          :disabled="isFixing"
-        >
-          <Wand2 :size="16" />
-          <span>AI Fix</span>
-        </button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'compile'" @mouseleave="activeTooltip = null">
+          <button 
+            class="action-btn compile-btn" 
+            @click="compilePdf" 
+            :disabled="isCompiling || !latexCode"
+          >
+            <Hammer :size="16" />
+          </button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'compile'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-bottom-left"
+            >
+              Compile LaTeX
+            </Motion>
+          </AnimatePresence>
+        </div>
         
-        <button 
-          class="action-btn compile-btn" 
-          @click="compilePdf" 
-          :disabled="isCompiling || !latexCode"
-        >
-          <Hammer :size="16" />
-          <span>Compile</span>
-        </button>
-        
-        <button 
-          v-if="pdfUrl" 
-          class="action-btn download-btn" 
-          @click="downloadPdf" 
-          :disabled="isDownloading"
-        >
-          <Download :size="16" />
-          <span>Download</span>
-        </button>
+        <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'download'" @mouseleave="activeTooltip = null">
+          <button 
+            v-if="pdfUrl" 
+            class="action-btn download-btn" 
+            @click="downloadPdf" 
+            :disabled="isDownloading"
+          >
+            <Download :size="16" />
+          </button>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'download' && pdfUrl"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-bottom-left"
+            >
+              Download PDF
+            </Motion>
+          </AnimatePresence>
+        </div>
       </div>
     </header>
 
@@ -1022,12 +1101,8 @@ const activeFileName = computed(() => {
 .auto-compile-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--muted);
+  gap: 6px;
   cursor: pointer;
-  user-select: none;
 }
 
 .auto-compile-toggle input {
@@ -1037,14 +1112,17 @@ const activeFileName = computed(() => {
   accent-color: var(--accent);
 }
 
+.info-icon {
+  color: var(--muted);
+}
+
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
   cursor: pointer;
   transition: 0.2s;
   border: 1px solid var(--line);
@@ -1093,6 +1171,27 @@ const activeFileName = computed(() => {
 .ai-btn:hover:not(:disabled) {
   background: rgba(163, 113, 247, 0.1);
   border-color: #a371f7;
+}
+
+.btn-tooltip-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.flying-message {
+  position: absolute;
+  background: var(--surface-soft);
+  color: var(--ink);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 1px solid var(--line);
 }
 
 .compiler-main {
@@ -1417,6 +1516,32 @@ const activeFileName = computed(() => {
   padding: 4px 14px;
   box-shadow: 0 12px 40px rgba(0,0,0,0.5);
   z-index: 20;
+}
+
+.refinement-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-size: 0.75rem;
+  padding: 8px 0;
+  outline: none;
+}
+
+.refinement-bar button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-left: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  align-self: center;
 }
 
 .pdf-viewer {

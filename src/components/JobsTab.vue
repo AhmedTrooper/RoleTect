@@ -192,7 +192,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="floating-message tooltip-bottom-left"
               >
                 Selection Mode
               </Motion>
@@ -209,7 +209,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message delete-tooltip"
+                class="floating-message tooltip-bottom-left"
               >
                 Delete All
               </Motion>
@@ -226,7 +226,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="floating-message tooltip-bottom-left"
               >
                 New Application
               </Motion>
@@ -247,7 +247,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="floating-message tooltip-bottom-left"
               >
                 Select All
               </Motion>
@@ -264,7 +264,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message delete-tooltip"
+                class="floating-message tooltip-bottom-left"
               >
                 Delete Selected ({{ selectedJobs.size }})
               </Motion>
@@ -281,7 +281,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="floating-message tooltip-bottom-left"
               >
                 Done
               </Motion>
@@ -312,7 +312,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="floating-message tooltip-top"
               >
                 Filter Status
               </Motion>
@@ -337,7 +337,7 @@ const getStatusClass = (status: string) => {
                 :animate="{ opacity: 1, y: 0, scale: 1 }"
                 :exit="{ opacity: 0, y: 5, scale: 0.9 }"
                 :transition="{ duration: 0.15 }"
-                class="flying-message"
+                class="floating-message tooltip-top"
               >
                 Sort Order
               </Motion>
@@ -569,33 +569,6 @@ const getStatusClass = (status: string) => {
   display: flex;
   align-items: center;
   position: relative;
-}
-
-.flying-message {
-  position: absolute;
-  bottom: 140%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.flying-message::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: var(--accent);
 }
 
 .filter-group select {
