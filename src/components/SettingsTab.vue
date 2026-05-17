@@ -356,6 +356,10 @@ watch(providerInput, async (newProvider) => {
   await store.loadProviderKeyStatus(newProvider);
 });
 
+const sortedThemes = computed(() => {
+  return [...store.availableThemes].sort((a, b) => a.name.localeCompare(b.name));
+});
+
 const handleThemeChange = async (event: Event) => {
   const target = event.target as HTMLSelectElement;
   await store.setTheme(target.value);
@@ -464,6 +468,9 @@ const handleSave = async () => {
           <div class="title-row">
             <h3>Visual Persona</h3>
             <div class="header-btns">
+              <button class="text-btn secondary" @click="store.setTheme('github-dark')">
+                <RotateCcw :size="14" /> Reset
+              </button>
               <button class="text-btn secondary" @click="copyDemoTheme">
                 <Download :size="14" /> Copy Demo
               </button>
@@ -472,7 +479,7 @@ const handleSave = async () => {
               </button>
             </div>
           </div>
-          <p>Switch between built-in themes or import your own surgical palette.</p>
+          <p>Choose a premium built-in theme or import your own surgical palette.</p>
         </div>
 
         <div class="theme-selector-row">
@@ -481,7 +488,7 @@ const handleSave = async () => {
             <div class="theme-picker-wrapper">
               <Palette :size="16" class="picker-icon" />
               <select :value="store.activeThemeId" @change="handleThemeChange" class="custom-select with-icon">
-                <option v-for="theme in store.availableThemes" :key="theme.id" :value="theme.id">
+                <option v-for="theme in sortedThemes" :key="theme.id" :value="theme.id">
                   {{ theme.name }} {{ theme.is_builtin ? '(Built-in)' : '' }}
                 </option>
               </select>

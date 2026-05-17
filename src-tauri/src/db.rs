@@ -230,123 +230,222 @@ pub fn init_db(app: &AppHandle) -> Result<Connection> {
             )?;
         }
 
-        // 1b. Batch ensure all built-in themes exist (Handles both initial seeding and updates)
+        // 1b. Overhaul built-in themes (8 Dark, 8 Light + GitHub Dark)
         let builtin_themes = vec![
-            ("surgical-neon-elite", "Surgical Neon Elite", r##" {
-                "--bg": "#050709",
-                "--bg-accent": "#0d1115",
-                "--surface": "#14191f",
-                "--surface-soft": "#1f262e",
-                "--ink": "#e8f1f2",
-                "--muted": "#7a8a99",
-                "--line": "#2a343d",
-                "--accent": "#0df0a3",
-                "--accent-soft": "rgba(13, 240, 163, 0.12)",
-                "--warning": "#ff475e"
+            ("github-dark", "GitHub Dark", r##" {
+                "--bg": "#0d1117",
+                "--bg-accent": "#161b22",
+                "--surface": "#21262d",
+                "--surface-soft": "#30363d",
+                "--ink": "#c9d1d9",
+                "--muted": "#8b949e",
+                "--line": "#30363d",
+                "--accent": "#238636",
+                "--accent-soft": "rgba(35, 134, 54, 0.15)",
+                "--warning": "#f85149"
             } "##),
-            ("surgical-neon-stealth", "Surgical Neon Stealth", r##" {
-                "--bg": "#0d0d0e",
-                "--bg-accent": "#161617",
-                "--surface": "#1e1e20",
-                "--surface-soft": "#2c2c2e",
-                "--ink": "#f5f5f7",
-                "--muted": "#86868b",
-                "--line": "#38383a",
-                "--accent": "#14f195",
-                "--accent-soft": "rgba(20, 241, 149, 0.1)",
-                "--warning": "#ff453a"
+            ("dracula", "Dracula", r##" {
+                "--bg": "#282a36",
+                "--bg-accent": "#1e1f29",
+                "--surface": "#343746",
+                "--surface-soft": "#44475a",
+                "--ink": "#f8f8f2",
+                "--muted": "#6272a4",
+                "--line": "#44475a",
+                "--accent": "#bd93f9",
+                "--accent-soft": "rgba(189, 147, 249, 0.15)",
+                "--warning": "#ff5555"
             } "##),
-            ("boreal-night", "Boreal Night", r##" {
-                "--bg": "#020b14",
-                "--bg-accent": "#051322",
-                "--surface": "#0b2036",
-                "--surface-soft": "#14314e",
-                "--ink": "#e2f0fd",
-                "--muted": "#6888a8",
-                "--line": "#1f3e5e",
-                "--accent": "#00e5ff",
-                "--accent-soft": "rgba(0, 229, 255, 0.12)",
-                "--warning": "#ff3366"
+            ("nord-dark", "Nord Dark", r##" {
+                "--bg": "#2e3440",
+                "--bg-accent": "#242933",
+                "--surface": "#3b4252",
+                "--surface-soft": "#434c5e",
+                "--ink": "#eceff4",
+                "--muted": "#4c566a",
+                "--line": "#3b4252",
+                "--accent": "#88c0d0",
+                "--accent-soft": "rgba(136, 192, 208, 0.15)",
+                "--warning": "#bf616a"
             } "##),
-            ("gilded-onyx", "Gilded Onyx", r##" {
-                "--bg": "#0b0a0a",
-                "--bg-accent": "#141212",
-                "--surface": "#1f1b1a",
-                "--surface-soft": "#2e2725",
-                "--ink": "#f7f0eb",
-                "--muted": "#8a7d77",
-                "--line": "#3d3330",
-                "--accent": "#ffd13b",
-                "--accent-soft": "rgba(255, 209, 59, 0.12)",
-                "--warning": "#ff4f4f"
+            ("one-dark", "One Dark", r##" {
+                "--bg": "#282c34",
+                "--bg-accent": "#21252b",
+                "--surface": "#2c313a",
+                "--surface-soft": "#3e4451",
+                "--ink": "#abb2bf",
+                "--muted": "#5c6370",
+                "--line": "#3e4451",
+                "--accent": "#61afef",
+                "--accent-soft": "rgba(97, 175, 239, 0.15)",
+                "--warning": "#e06c75"
             } "##),
-            ("velvet-plasma", "Velvet Plasma", r##" {
-                "--bg": "#0d0814",
-                "--bg-accent": "#150d21",
-                "--surface": "#1f1430",
-                "--surface-soft": "#2d1e45",
-                "--ink": "#f4eefc",
-                "--muted": "#8a7b9e",
-                "--line": "#412e5e",
-                "--accent": "#b538ff",
-                "--accent-soft": "rgba(181, 56, 255, 0.12)",
-                "--warning": "#ff2e7e"
+            ("catppuccin-macchiato", "Catppuccin Macchiato", r##" {
+                "--bg": "#24273a",
+                "--bg-accent": "#1e2030",
+                "--surface": "#363a4f",
+                "--surface-soft": "#494d64",
+                "--ink": "#cad3f5",
+                "--muted": "#8087a2",
+                "--line": "#494d64",
+                "--accent": "#8aadf4",
+                "--accent-soft": "rgba(138, 173, 244, 0.15)",
+                "--warning": "#ed8796"
             } "##),
-            ("obsidian-magma", "Obsidian Magma", r##" {
-                "--bg": "#080605",
-                "--bg-accent": "#120d0b",
-                "--surface": "#1c1411",
-                "--surface-soft": "#2b1f1a",
-                "--ink": "#fdf4f0",
-                "--muted": "#8c776d",
-                "--line": "#3d2b24",
-                "--accent": "#ff5500",
-                "--accent-soft": "rgba(255, 85, 0, 0.12)",
-                "--warning": "#ff0044"
+            ("everforest-dark", "Everforest Dark", r##" {
+                "--bg": "#2d353b",
+                "--bg-accent": "#232a2e",
+                "--surface": "#343f44",
+                "--surface-soft": "#3d484d",
+                "--ink": "#d3c6aa",
+                "--muted": "#859289",
+                "--line": "#475258",
+                "--accent": "#a7c080",
+                "--accent-soft": "rgba(167, 192, 128, 0.15)",
+                "--warning": "#e67e80"
             } "##),
-            ("venom-canopy", "Venom Canopy", r##" {
-                "--bg": "#040a06",
-                "--bg-accent": "#0a140d",
-                "--surface": "#122116",
-                "--surface-soft": "#1c3022",
-                "--ink": "#eaf5ec",
-                "--muted": "#7a9c82",
-                "--line": "#2b4a35",
-                "--accent": "#b8ff2e",
-                "--accent-soft": "rgba(184, 255, 46, 0.12)",
-                "--warning": "#ff4a2e"
+            ("tokyo-night", "Tokyo Night", r##" {
+                "--bg": "#1a1b26",
+                "--bg-accent": "#16161e",
+                "--surface": "#24283b",
+                "--surface-soft": "#414868",
+                "--ink": "#a9b1d6",
+                "--muted": "#565f89",
+                "--line": "#24283b",
+                "--accent": "#7aa2f7",
+                "--accent-soft": "rgba(122, 162, 247, 0.15)",
+                "--warning": "#f7768e"
             } "##),
-            ("lunar-crimson", "Lunar Crimson", r##" {
-                "--bg": "#050505",
-                "--bg-accent": "#0f0f0f",
-                "--surface": "#1a1a1a",
-                "--surface-soft": "#262626",
-                "--ink": "#ffffff",
-                "--muted": "#737373",
-                "--line": "#333333",
-                "--accent": "#ff0033",
-                "--accent-soft": "rgba(255, 0, 51, 0.12)",
-                "--warning": "#ff9900"
+            ("night-owl", "Night Owl", r##" {
+                "--bg": "#011627",
+                "--bg-accent": "#010e1b",
+                "--surface": "#0b2942",
+                "--surface-soft": "#1d3b53",
+                "--ink": "#d6deeb",
+                "--muted": "#5f7e97",
+                "--line": "#1d3b53",
+                "--accent": "#82aaff",
+                "--accent-soft": "rgba(130, 170, 255, 0.15)",
+                "--warning": "#ef5350"
             } "##),
-            ("coral-abyss", "Coral Abyss", r##" {
-                "--bg": "#040d12",
-                "--bg-accent": "#0a161d",
-                "--surface": "#13252d",
-                "--surface-soft": "#1e3640",
-                "--ink": "#e6f2f5",
-                "--muted": "#7898a3",
-                "--line": "#2b4a55",
-                "--accent": "#ff7a59",
-                "--accent-soft": "rgba(255, 122, 89, 0.12)",
-                "--warning": "#ff3860"
+            ("rose-pine-moon", "Rosé Pine Moon", r##" {
+                "--bg": "#232136",
+                "--bg-accent": "#2a273f",
+                "--surface": "#393552",
+                "--surface-soft": "#44415a",
+                "--ink": "#e0def4",
+                "--muted": "#908caa",
+                "--line": "#44415a",
+                "--accent": "#ea9a97",
+                "--accent-soft": "rgba(234, 154, 151, 0.15)",
+                "--warning": "#eb6f92"
+            } "##),
+            ("github-light", "GitHub Light", r##" {
+                "--bg": "#ffffff",
+                "--bg-accent": "#f6f8fa",
+                "--surface": "#ffffff",
+                "--surface-soft": "#f6f8fa",
+                "--ink": "#24292f",
+                "--muted": "#57606a",
+                "--line": "#d0d7de",
+                "--accent": "#0969da",
+                "--accent-soft": "rgba(9, 105, 218, 0.1)",
+                "--warning": "#cf222e"
+            } "##),
+            ("everforest-light", "Everforest Light", r##" {
+                "--bg": "#fdf6e3",
+                "--bg-accent": "#fefcf0",
+                "--surface": "#f8f0dc",
+                "--surface-soft": "#efebd4",
+                "--ink": "#5c6a72",
+                "--muted": "#939f91",
+                "--line": "#e8e5d5",
+                "--accent": "#8da101",
+                "--accent-soft": "rgba(141, 161, 1, 0.1)",
+                "--warning": "#f85552"
+            } "##),
+            ("catppuccin-latte", "Catppuccin Latte", r##" {
+                "--bg": "#eff1f5",
+                "--bg-accent": "#e6e9ef",
+                "--surface": "#ccd0da",
+                "--surface-soft": "#bcc0cc",
+                "--ink": "#4c4f69",
+                "--muted": "#7c7f93",
+                "--line": "#bcc0cc",
+                "--accent": "#1e66f5",
+                "--accent-soft": "rgba(30, 102, 245, 0.1)",
+                "--warning": "#d20f39"
+            } "##),
+            ("nord-light", "Nord Light", r##" {
+                "--bg": "#eceff4",
+                "--bg-accent": "#e5e9f0",
+                "--surface": "#d8dee9",
+                "--surface-soft": "#cdd3de",
+                "--ink": "#2e3440",
+                "--muted": "#4c566a",
+                "--line": "#d8dee9",
+                "--accent": "#5e81ac",
+                "--accent-soft": "rgba(94, 129, 172, 0.1)",
+                "--warning": "#bf616a"
+            } "##),
+            ("one-light", "One Light", r##" {
+                "--bg": "#fafafa",
+                "--bg-accent": "#f0f0f0",
+                "--surface": "#ffffff",
+                "--surface-soft": "#e5e5e6",
+                "--ink": "#383a42",
+                "--muted": "#a0a1a7",
+                "--line": "#dbdbdc",
+                "--accent": "#4078f2",
+                "--accent-soft": "rgba(64, 120, 242, 0.1)",
+                "--warning": "#e45649"
+            } "##),
+            ("solarized-light", "Solarized Light", r##" {
+                "--bg": "#fdf6e3",
+                "--bg-accent": "#eee8d5",
+                "--surface": "#fdf6e3",
+                "--surface-soft": "#eee8d5",
+                "--ink": "#657b83",
+                "--muted": "#93a1a1",
+                "--line": "#d5c4a1",
+                "--accent": "#268bd2",
+                "--accent-soft": "rgba(38, 139, 210, 0.1)",
+                "--warning": "#dc322f"
+            } "##),
+            ("paper-color", "PaperColor", r##" {
+                "--bg": "#f5f5f5",
+                "--bg-accent": "#eeeeee",
+                "--surface": "#ffffff",
+                "--surface-soft": "#e4e4e4",
+                "--ink": "#444444",
+                "--muted": "#878787",
+                "--line": "#d0d0d0",
+                "--accent": "#005f87",
+                "--accent-soft": "rgba(0, 95, 135, 0.1)",
+                "--warning": "#df0000"
+            } "##),
+            ("rose-pine-dawn", "Rosé Pine Dawn", r##" {
+                "--bg": "#faf4ed",
+                "--bg-accent": "#fffaf3",
+                "--surface": "#f2e9e1",
+                "--surface-soft": "#ebe1d7",
+                "--ink": "#575279",
+                "--muted": "#797593",
+                "--line": "#dfdad9",
+                "--accent": "#d7827e",
+                "--accent-soft": "rgba(215, 130, 126, 0.1)",
+                "--warning": "#b4637a"
             } "##),
         ];
+
+        // First, clear old built-in themes to handle the removal of non-compliant ones
+        conn.execute("DELETE FROM themes WHERE is_builtin = 1 AND id NOT IN ('github-dark', 'dracula', 'nord-dark')", [])?;
 
         for (id, name, config) in builtin_themes {
             conn.execute(
                 "INSERT INTO themes (id, name, config, is_builtin) VALUES (?1, ?2, ?3, 1)
                  ON CONFLICT(id) DO UPDATE SET name=excluded.name, config=excluded.config
-                 ON CONFLICT(name) DO UPDATE SET config=excluded.config",
+                 ON CONFLICT(name) DO UPDATE SET id=excluded.id, config=excluded.config",
                 [id, name, config],
             )?;
         }
