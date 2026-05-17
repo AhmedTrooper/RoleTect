@@ -276,3 +276,28 @@ pub async fn get_last_opened_diagram(state: State<'_, AppState>) -> Result<Optio
         Ok(path)
     }).await
 }
+
+#[tauri::command]
+pub async fn save_setting(state: State<'_, AppState>, key: String, value: String) -> Result<(), String> {
+    state.with_db(|conn| {
+        conn.execute(
+            "INSERT INTO app_settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            [&key, &value],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }).await
+}
+
+#[tauri::command]
+pub async fn get_setting(state: State<'_, AppState>, key: String, default_value: Option<String>) -> Result<String, String> {
+    state.with_db(|conn| {
+        let value: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = ?1",
+                [&key],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|_| default_value.unwrap_or_default());
+        Ok(value)
+    }).await
+}

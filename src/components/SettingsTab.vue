@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Palette,
   Plus,
-  Trash2
+  Trash2,
+  Type,
+  Italic
 } from '@lucide/vue';
 import { Motion, AnimatePresence } from 'motion-v';
 import { invoke } from '@tauri-apps/api/core';
@@ -32,6 +34,27 @@ const activeTooltip = ref<string | null>(null);
 const isImportingTheme = ref(false);
 const customThemeJson = ref('');
 const themeError = ref('');
+
+// Typography Data
+const fontFamilies = [
+  { id: 'Inter', name: 'Inter (Sans)' },
+  { id: 'Geist Sans', name: 'Geist (Modern)' },
+  { id: 'Merriweather', name: 'Merriweather (Serif)' },
+  { id: 'JetBrains Mono', name: 'JetBrains Mono (Code)' }
+];
+
+const fontWeights = [
+  { id: '300', name: 'Light' },
+  { id: '400', name: 'Regular' },
+  { id: '500', name: 'Medium' },
+  { id: '600', name: 'Semi-Bold' },
+  { id: '700', name: 'Bold' }
+];
+
+const fontStyles = [
+  { id: 'normal', name: 'Normal' },
+  { id: 'italic', name: 'Italic' }
+];
 
 const copyDemoTheme = async () => {
   const demoTheme = {
@@ -375,6 +398,33 @@ const showThemeSchema = () => {
   dialog.showAlert(schema, 'Theme Schema');
 };
 
+const handleFontFamilyChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  await store.setFontFamily(target.value);
+};
+
+const handleFontSizeChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  await store.setFontSize(parseInt(target.value));
+};
+
+const handleFontWeightChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  await store.setFontWeight(target.value);
+};
+
+const handleFontStyleChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  await store.setFontStyle(target.value);
+};
+
+const handleResetTypography = async () => {
+  const confirmed = await dialog.showConfirm('Reset all typography settings to default?', 'Reset Typography');
+  if (confirmed) {
+    await store.resetTypography();
+  }
+};
+
 const handleSave = async () => {
   isSaving.value = true;
   saveError.value = '';
@@ -470,6 +520,67 @@ const handleSave = async () => {
             </div>
           </Motion>
         </AnimatePresence>
+      </div>
+
+      <!-- Typography Settings -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="title-row">
+            <h3>Typography</h3>
+            <button class="text-btn secondary" @click="handleResetTypography">
+              <RotateCcw :size="14" /> Reset
+            </button>
+          </div>
+          <p>Adjust the interface fonts to suit your surgical workflow.</p>
+        </div>
+
+        <div class="typography-row">
+          <div class="input-group">
+            <label>Font Family</label>
+            <div class="theme-picker-wrapper">
+              <Type :size="16" class="picker-icon" />
+              <select :value="store.fontFamily" @change="handleFontFamilyChange" class="custom-select with-icon">
+                <option v-for="font in fontFamilies" :key="font.id" :value="font.id">
+                  {{ font.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Font Weight</label>
+            <select :value="store.fontWeight" @change="handleFontWeightChange" class="custom-select">
+              <option v-for="weight in fontWeights" :key="weight.id" :value="weight.id">
+                {{ weight.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Font Style</label>
+            <div class="theme-picker-wrapper">
+              <Italic :size="16" class="picker-icon" />
+              <select :value="store.fontStyle" @change="handleFontStyleChange" class="custom-select with-icon">
+                <option v-for="style in fontStyles" :key="style.id" :value="style.id">
+                  {{ style.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group size-group">
+            <label>Font Size ({{ store.fontSize }}px)</label>
+            <input 
+              type="range" 
+              min="12" 
+              max="20" 
+              step="1" 
+              :value="store.fontSize" 
+              @input="handleFontSizeChange" 
+              class="font-size-slider"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- Intelligence Engine -->
@@ -714,6 +825,24 @@ const handleSave = async () => {
 
 .text-btn:hover {
   opacity: 0.8;
+}
+
+.typography-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+  align-items: flex-end;
+}
+
+.size-group {
+  flex: 1.5;
+}
+
+.font-size-slider {
+  width: 100%;
+  margin-top: 12px;
+  cursor: pointer;
+  accent-color: var(--accent);
 }
 
 .input-row { display: flex; gap: 20px; margin-top: 20px; }
@@ -1046,6 +1175,7 @@ label {
 
 @media (max-width: 600px) {
   .input-row { flex-direction: column; }
+  .typography-row { flex-direction: column; align-items: stretch; }
   .actions-footer { flex-direction: column; gap: 20px; align-items: flex-start; }
 }
 </style>

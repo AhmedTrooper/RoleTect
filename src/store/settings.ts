@@ -20,6 +20,12 @@ export const useSettingsStore = defineStore('settings', () => {
   const availableThemes = ref<Theme[]>([]);
   const activeThemeId = ref('github-dark');
 
+  // Font Settings
+  const fontFamily = ref('Inter');
+  const fontSize = ref(14);
+  const fontWeight = ref('400');
+  const fontStyle = ref('normal');
+
   // Cache Stronghold and Store instances
   const strongholdInstance = shallowRef<Stronghold | null>(null);
   const storeInstance = shallowRef<Store | null>(null);
@@ -34,6 +40,15 @@ export const useSettingsStore = defineStore('settings', () => {
     } catch (e) {
       console.error("Failed to apply theme:", e);
     }
+  };
+
+  const applyFonts = () => {
+    const root = document.documentElement;
+    const family = fontFamily.value.includes(' ') ? `"${fontFamily.value}"` : fontFamily.value;
+    root.style.setProperty('--font-family', `${family}, sans-serif`);
+    root.style.setProperty('--font-size', `${fontSize.value}px`);
+    root.style.setProperty('--font-weight', fontWeight.value);
+    root.style.setProperty('--font-style', fontStyle.value);
   };
 
   const loadThemes = async () => {
@@ -58,6 +73,37 @@ export const useSettingsStore = defineStore('settings', () => {
     } catch (e) {
       console.error("Error setting theme:", e);
     }
+  };
+
+  const setFontFamily = async (family: string) => {
+    fontFamily.value = family;
+    applyFonts();
+    await invoke('save_setting', { key: 'font_family', value: family });
+  };
+
+  const setFontSize = async (size: number) => {
+    fontSize.value = size;
+    applyFonts();
+    await invoke('save_setting', { key: 'font_size', value: size.toString() });
+  };
+
+  const setFontWeight = async (weight: string) => {
+    fontWeight.value = weight;
+    applyFonts();
+    await invoke('save_setting', { key: 'font_weight', value: weight });
+  };
+
+  const setFontStyle = async (style: string) => {
+    fontStyle.value = style;
+    applyFonts();
+    await invoke('save_setting', { key: 'font_style', value: style });
+  };
+
+  const resetTypography = async () => {
+    await setFontFamily('Inter');
+    await setFontSize(14);
+    await setFontWeight('400');
+    await setFontStyle('normal');
   };
 
   const importCustomTheme = async (themeJson: string) => {
@@ -217,6 +263,15 @@ export const useSettingsStore = defineStore('settings', () => {
 
       await loadProviderKeyStatus(selectedAiProvider.value);
       await loadThemes();
+
+      // Load Fonts
+      fontFamily.value = await invoke('get_setting', { key: 'font_family', default_value: 'Inter' });
+      const savedFontSize = await invoke('get_setting', { key: 'font_size', default_value: '14' });
+      fontSize.value = parseInt(savedFontSize);
+      fontWeight.value = await invoke('get_setting', { key: 'font_weight', default_value: '400' });
+      fontStyle.value = await invoke('get_setting', { key: 'font_style', default_value: 'normal' });
+      applyFonts();
+
     } catch (e) {
       console.error("Error loading settings:", e);
       hasSecureKey.value = false;
@@ -229,7 +284,16 @@ export const useSettingsStore = defineStore('settings', () => {
     selectedAiModel, 
     availableThemes,
     activeThemeId,
+    fontFamily,
+    fontSize,
+    fontWeight,
+    fontStyle,
     setTheme,
+    setFontFamily,
+    setFontSize,
+    setFontWeight,
+    setFontStyle,
+    resetTypography,
     importCustomTheme,
     deleteCustomTheme,
     saveApiKey, 

@@ -131,7 +131,9 @@ pub fn run() {
             commands::settings::save_diagram_workspace_path,
             commands::settings::get_diagram_workspace_path,
             commands::settings::save_last_opened_diagram,
-            commands::settings::get_last_opened_diagram
+            commands::settings::get_last_opened_diagram,
+            commands::settings::save_setting,
+            commands::settings::get_setting
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
