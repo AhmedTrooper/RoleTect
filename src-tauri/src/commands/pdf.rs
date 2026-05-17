@@ -135,10 +135,18 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                     return Err(format!("Main TeX file '{}' not found in workspace.", main_file_name));
                 }
 
+                // IMPORTANT: Extract just the filename for tex_input_name.
+                // Tectonic's internal xdvipdfmx driver often fails if the job name contains path separators.
+                let logical_input_name = PathBuf::from(&main_file_name)
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s.to_string())
+                    .ok_or_else(|| "Invalid main file name".to_string())?;
+
                 let mut sb = tectonic::driver::ProcessingSessionBuilder::default();
                 sb.bundle(bundle)
                     .primary_input_path(&main_file_path)
-                    .tex_input_name(&main_file_name)
+                    .tex_input_name(&logical_input_name)
                     .filesystem_root(&workspace_path)
                     .format_name("latex")
                     .output_format(tectonic::driver::OutputFormat::Pdf)
@@ -150,15 +158,15 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                 sess.run(&mut status)
                     .map_err(|e| format!("Compilation failed: {}\n\nLogs:\n{}", e, status.logs))?;
 
-                // Determine output PDF path. Tectonic outputs relative to the input file by default.
-                let mut pdf_path = main_file_path.clone();
-                pdf_path.set_extension("pdf");
+                // Tectonic outputs to the filesystem root by default. 
+                // The output file will be named based on the logical_input_name stem.
+                let mut pdf_file_name = PathBuf::from(&logical_input_name);
+                pdf_file_name.set_extension("pdf");
+                
+                let pdf_path = workspace_path.join(pdf_file_name);
                 
                 if pdf_path.exists() {
-                    let data = std::fs::read(&pdf_path).map_err(|e| format!("Failed to read generated PDF: {}", e))?;
-                    // Optional: Clean up intermediate files (aux, log, etc. are handled by Tectonic usually, but PDF stays)
-                    // We keep it for now as it's a workspace and user might want it.
-                    Ok(data)
+                    std::fs::read(&pdf_path).map_err(|e| format!("Failed to read generated PDF: {}", e))
                 } else {
                     Err(format!("Compilation successful, but PDF was not found at expected location: {:?}\n\nLogs:\n{}", pdf_path, status.logs))
                 }
