@@ -26,6 +26,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const fontWeight = ref('400');
   const fontStyle = ref('normal');
 
+  const isAutoCompileEnabled = ref(true);
+
   // Cache Stronghold and Store instances
   const strongholdInstance = shallowRef<Stronghold | null>(null);
   const storeInstance = shallowRef<Store | null>(null);
@@ -97,6 +99,11 @@ export const useSettingsStore = defineStore('settings', () => {
     fontStyle.value = style;
     applyFonts();
     await invoke('save_setting', { key: 'font_style', value: style });
+  };
+
+  const setAutoCompile = async (enabled: boolean) => {
+    isAutoCompileEnabled.value = enabled;
+    await invoke('save_setting', { key: 'auto_compile', value: enabled.toString() });
   };
 
   const resetTypography = async () => {
@@ -270,6 +277,10 @@ export const useSettingsStore = defineStore('settings', () => {
       fontSize.value = parseInt(savedFontSize);
       fontWeight.value = await invoke('get_setting', { key: 'font_weight', default_value: '400' });
       fontStyle.value = await invoke('get_setting', { key: 'font_style', default_value: 'normal' });
+      
+      const autoCompile = await invoke('get_setting', { key: 'auto_compile', default_value: 'true' });
+      isAutoCompileEnabled.value = autoCompile === 'true';
+
       applyFonts();
 
     } catch (e) {
@@ -288,11 +299,13 @@ export const useSettingsStore = defineStore('settings', () => {
     fontSize,
     fontWeight,
     fontStyle,
+    isAutoCompileEnabled,
     setTheme,
     setFontFamily,
     setFontSize,
     setFontWeight,
     setFontStyle,
+    setAutoCompile,
     resetTypography,
     importCustomTheme,
     deleteCustomTheme,

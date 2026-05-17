@@ -79,7 +79,6 @@ const isRefining = ref(false);
 const refinementInstruction = ref('');
 const isDownloading = ref(false);
 const compilationError = ref<string | null>(null);
-const isAutoCompileEnabled = ref(true);
 const isDirty = ref(false);
 const editorContainer = ref<HTMLElement | null>(null);
 const isLoadingWorkspace = ref(false);
@@ -345,11 +344,13 @@ watch(latexCode, () => {
   isDirty.value = true;
 });
 
-const handleBlur = () => {
+const handleBlur = async () => {
   if (isDirty.value) {
-    saveActiveFile();
-    if (isAutoCompileEnabled.value) {
-      compilePdf();
+    if (settingsStore.isAutoCompileEnabled) {
+      // compilePdf internally calls and awaits saveActiveFile()
+      await compilePdf();
+    } else {
+      await saveActiveFile();
     }
   }
 };
@@ -540,9 +541,22 @@ const activeFileName = computed(() => {
       
       <div class="header-actions">
         <label class="auto-compile-toggle">
-          <input type="checkbox" v-model="isAutoCompileEnabled">
+          <input 
+            type="checkbox" 
+            :checked="settingsStore.isAutoCompileEnabled"
+            @change="settingsStore.setAutoCompile(($event.target as HTMLInputElement).checked)"
+          >
           <span>Auto Compile</span>
         </label>
+        
+        <button 
+          v-if="isDirty"
+          class="action-btn save-btn"
+          @click="saveActiveFile"
+        >
+          <Save :size="16" />
+          <span>Save</span>
+        </button>
         
         <button 
           v-if="compilationError" 
@@ -886,6 +900,18 @@ const activeFileName = computed(() => {
 .compile-btn:hover:not(:disabled) {
   opacity: 0.9;
   background: var(--accent);
+}
+
+.save-btn {
+  border-color: var(--accent-soft);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.save-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 .ai-btn {
