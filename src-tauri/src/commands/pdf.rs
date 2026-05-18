@@ -174,7 +174,7 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                     .ok_or_else(|| "Invalid main file name".to_string())?;
 
                 let mut sb = tectonic::driver::ProcessingSessionBuilder::default();
-                let temp_output_dir = std::env::temp_dir().join(format!("cvsynth-{}", nanoid::nanoid!()));
+                let temp_output_dir = std::env::temp_dir().join(format!("csynth-{}", nanoid::nanoid!()));
                 std::fs::create_dir_all(&temp_output_dir).map_err(|e| format!("Failed to create temp output dir: {}", e))?;
 
                 sb.bundle(bundle)

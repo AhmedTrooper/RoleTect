@@ -64,7 +64,7 @@ onMounted(() => {
             <circle cx="75" cy="25" r="5" fill="var(--accent)" />
           </svg>
         </Motion>
-        <h1 class="brand-name">CVSynth</h1>
+        <h1 class="brand-name">CSynth</h1>
       </div>
 
       <!-- Loading Messages -->

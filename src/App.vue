@@ -33,7 +33,7 @@ const tabs = [
 ];
 
 const externalLinks = [
-  { url: 'https://github.com/AhmedTrooper/CVSynth', label: 'Source', icon: Code },
+  { url: 'https://github.com/AhmedTrooper/CSynth', label: 'Source', icon: Code },
   { url: 'https://www.youtube.com/@AhmedTrooper', label: 'YouTube', icon: Video },
 ];
 

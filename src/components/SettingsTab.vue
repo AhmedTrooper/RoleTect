@@ -123,7 +123,7 @@ const exportData = async () => {
     
     const path = await saveDialog({
       filters: [{ name: 'JSON', extensions: ['json'] }],
-      defaultPath: `cvsynth_backup_${dateStr}_${timeStr}.json`
+      defaultPath: `csynth_backup_${dateStr}_${timeStr}.json`
     });
     
     if (path) {

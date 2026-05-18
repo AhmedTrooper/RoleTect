@@ -1,8 +1,9 @@
-# CVSynth 🔬
+# CSynth 🔬
 
 ### Surgical AI Resume Tailoring & LaTeX Orchestration
 
-CVSynth is a high-performance desktop application designed for professionals who treat their professional narrative as a technical specification. It integrates sovereign LLM orchestration with professional TeX typesetting to ensure your resume is not just tailored, but surgically optimized for every opportunity.
+CSynth
+ is a high-performance desktop application designed for professionals who treat their professional narrative as a technical specification. It integrates sovereign LLM orchestration with professional TeX typesetting to ensure your resume is not just tailored, but surgically optimized for every opportunity.
 
 ---
 
@@ -21,9 +22,9 @@ CVSynth is a high-performance desktop application designed for professionals who
 ## 🚀 Getting Started
 
 ### For Users
-To download the latest stable version of CVSynth, visit the **Releases** section:
+To download the latest stable version of CSynth, visit the **Releases** section:
 
-👉 [**Download CVSynth Releases**](https://github.com/AhmedTrooper/CVSynth/releases)
+👉 [**Download CSynth Releases**](https://github.com/AhmedTrooper/CSynth/releases)
 
 ---
 
@@ -35,13 +36,13 @@ To download the latest stable version of CVSynth, visit the **Releases** section
 
 ### Technical Demo
 Watch the engine in action:
-👉 [**CVSynth Technical Demo (YouTube)**](https://www.youtube.com/@AhmedTrooper)
+👉 [**CSynth Technical Demo (YouTube)**](https://www.youtube.com/@AhmedTrooper)
 
 ---
 
 ## 🛠️ For Developers
 
-We welcome developers to experiment with the CVSynth engine. Please follow the instructions below to set up your environment.
+We welcome developers to experiment with the CSynth engine. Please follow the instructions below to set up your environment.
 
 ### Prerequisites
 - [Bun](https://bun.sh/) (Fast JavaScript runtime & package manager)
@@ -53,10 +54,10 @@ Please **clone the `dev` branch** for the latest features and patches:
 
 ```bash
 # Clone the repository
-git clone -b dev https://github.com/AhmedTrooper/CVSynth.git
+git clone -b dev https://github.com/AhmedTrooper/CSynth.git
 
 # Navigate to the project
-cd CVSynth
+cd CSynth
 
 # Install dependencies
 bun install
@@ -76,7 +77,8 @@ bun run tauri build
 
 ## 🗺️ System Architecture
 
-CVSynth uses a bridge architecture to combine a modern web frontend with a high-performance Rust backend.
+CSynth
+ uses a bridge architecture to combine a modern web frontend with a high-performance Rust backend.
 
 ```mermaid
 graph TD
@@ -123,7 +125,8 @@ We love contributions! To keep the repository clean and stable, please follow th
 
 ## ⚖️ License
 
-CVSynth is dual-licensed under the [MIT License](LICENSE) and [Apache License 2.0](LICENSE_APACHE).
+CSynth
+ is dual-licensed under the [MIT License](LICENSE) and [Apache License 2.0](LICENSE_APACHE).
 
 ---
 *Made with ❤️ by [AhmedTrooper](https://github.com/AhmedTrooper)*

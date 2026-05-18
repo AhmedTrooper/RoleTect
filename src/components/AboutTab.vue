@@ -7,11 +7,11 @@ import { open } from '@tauri-apps/plugin-shell';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { Motion } from 'motion-v';
 
-const appName = ref('CVSynth');
+const appName = ref('CSynth');
 const appVersion = ref('0.1.0');
 const tauriVersion = ref('');
 const osType = ref('');
-const identifier = 'com.ahmedtrooper.cvsynth';
+const identifier = 'com.ahmedtrooper.csynth';
 const copied = ref(false);
 
 onMounted(async () => {
@@ -97,13 +97,14 @@ const copyIdentifier = async () => {
 
       <div class="description-box">
         <p>
-          CVSynth integrates sovereign LLM orchestration with professional TeX typesetting. 
+          CSynth
+ integrates sovereign LLM orchestration with professional TeX typesetting. 
           Built for those who treat their professional narrative as a technical specification.
         </p>
       </div>
 
       <div class="action-row">
-        <button class="btn-premium" @click="openLink('https://github.com/AhmedTrooper/CVSynth')">
+        <button class="btn-premium" @click="openLink('https://github.com/AhmedTrooper/CSynth')">
           <Code :size="14" />
           <span>Source Repository</span>
         </button>
