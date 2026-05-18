@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useInboxStore, InboxJob } from '../store/inbox';
 import { useSettingsStore } from '../store/settings';
 import { useDialogStore } from '../store/dialog';
@@ -28,6 +29,7 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 const inboxStore = useInboxStore();
 const settingsStore = useSettingsStore();
 const dialog = useDialogStore();
+const router = useRouter();
 
 const activeTooltip = ref<string | null>(null);
 const isSelectionMode = ref(false);
@@ -73,6 +75,8 @@ const handleCardClick = (job: InboxJob) => {
     } else {
       selectedJobs.value.add(job.id);
     }
+  } else {
+    router.push(`/inbox/${job.id}`);
   }
 };
 

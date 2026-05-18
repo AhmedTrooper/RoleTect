@@ -45,6 +45,27 @@ pub async fn get_all_inbox_jobs(state: State<'_, AppState>) -> Result<Vec<InboxJ
 }
 
 #[tauri::command]
+pub async fn get_inbox_job_by_id(state: State<'_, AppState>, id: String) -> Result<InboxJob, String> {
+    state.with_db(move |conn| {
+        let mut stmt = conn
+            .prepare("SELECT id, url, raw_description, status, created_at FROM inbox_jobs WHERE id = ?1")
+            .map_err(|e| e.to_string())?;
+
+        let job = stmt.query_row([&id], |row| {
+            Ok(InboxJob {
+                id: row.get(0)?,
+                url: row.get(1)?,
+                raw_description: row.get(2)?,
+                status: row.get(3)?,
+                created_at: row.get(4)?,
+            })
+        }).map_err(|e| format!("Inbox job not found: {}", e))?;
+
+        Ok(job)
+    }).await
+}
+
+#[tauri::command]
 pub async fn delete_inbox_job(state: State<'_, AppState>, id: String) -> Result<(), String> {
     state.with_db(|conn| {
         conn.execute("DELETE FROM inbox_jobs WHERE id = ?1", [&id])

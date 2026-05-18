@@ -145,6 +145,7 @@ pub fn run() {
             commands::settings::get_setting,
             commands::settings::clear_tectonic_cache,
             commands::inbox::get_all_inbox_jobs,
+            commands::inbox::get_inbox_job_by_id,
             commands::inbox::delete_inbox_job,
             commands::inbox::delete_all_inbox_jobs,
             commands::inbox::mark_inbox_job_processed,

@@ -73,12 +73,17 @@ const routes = [
     name: 'JobParser', 
     component: () => import('../components/JobParserView.vue') 
   },
-  { 
-    // Dynamic route for specific job details
+  {
     path: '/job/:id', 
     name: 'JobDetail', 
     component: JobDetailView, 
     props: true // Passes the :id as a prop to the component
+  },
+  {
+    path: '/inbox/:id',
+    name: 'InboxDetail',
+    component: () => import('../components/InboxJobDetailView.vue'),
+    props: true
   },
 ];
 
