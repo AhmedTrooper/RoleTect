@@ -38,25 +38,37 @@ async fn main() {
         // Inbox Routes
         .route("/inbox", get(handlers::inbox::get_all_inbox_jobs))
         .route("/inbox/ingest", post(handlers::inbox::ingest_job))
-        .route("/inbox/:id", delete(handlers::inbox::delete_inbox_job))
-        .route("/inbox/:id/process", post(handlers::inbox::mark_inbox_job_processed))
+        .route("/inbox/{id}", delete(handlers::inbox::delete_inbox_job))
+        .route("/inbox/{id}/process", post(handlers::inbox::mark_inbox_job_processed))
         .route("/inbox/config", get(handlers::inbox::get_extension_config))
         .route("/inbox/secret/reset", post(handlers::inbox::reset_extension_secret))
 
         // Jobs Routes
         .route("/jobs", get(handlers::jobs::get_all_jobs))
         .route("/jobs", post(handlers::jobs::save_job))
-        .route("/jobs/:id", get(handlers::jobs::get_job_by_id))
-        .route("/jobs/:id", delete(handlers::jobs::delete_job))
+        .route("/jobs/{id}", get(handlers::jobs::get_job_by_id))
+        .route("/jobs/{id}", delete(handlers::jobs::delete_job))
         .route("/jobs/parse", post(handlers::jobs::parse_job))
 
         // Resume Routes
         .route("/resumes", get(handlers::resumes::get_all_resumes))
         .route("/resumes", post(handlers::resumes::create_new_resume))
-        .route("/resumes/:id", get(handlers::resumes::get_resume_by_id))
+        .route("/resumes/{id}", get(handlers::resumes::get_resume_by_id))
         .route("/resumes/update", post(handlers::resumes::update_resume))
         .route("/resumes/tailor", post(handlers::resumes::tailor_resume))
-        .route("/resumes/latest/:job_id", get(handlers::resumes::get_latest_tailored_resume))
+        .route("/resumes/latest/{job_id}", get(handlers::resumes::get_latest_tailored_resume))
+        
+        // Cover Letter Routes
+        .route("/cover_letters", get(handlers::cover_letters::get_all_cover_letters))
+        .route("/cover_letters", post(handlers::cover_letters::create_new_cover_letter))
+        .route("/cover_letters/{id}", get(handlers::cover_letters::get_cover_letter_by_id))
+        .route("/cover_letters/update", post(handlers::cover_letters::update_cover_letter))
+        .route("/cover_letters/tailor", post(handlers::cover_letters::tailor_cover_letter))
+        .route("/cover_letters/latest/{job_id}", get(handlers::cover_letters::get_latest_tailored_cover_letter))
+
+        // Downloads Routes
+        .route("/downloads", get(handlers::downloads::get_recent_downloads))
+        .route("/downloads", post(handlers::downloads::record_download))
 
         // Settings Routes
         .route("/settings/ai", get(handlers::settings::get_ai_config))
@@ -66,7 +78,6 @@ async fn main() {
         // PDF Routes
         .route("/pdf/compile", post(handlers::pdf::compile_latex))
         .route("/pdf/refine", post(handlers::pdf::refine_latex_with_ai))
-        .route("/pdf/fix", post(handlers::pdf::fix_latex_with_ai))
 
         .layer(cors)
         .with_state(shared_state);

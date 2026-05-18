@@ -144,8 +144,8 @@ const parseJsonField = (field: string | undefined | null): string[] => {
   try {
     return JSON.parse(field);
   } catch (e) {
-    console.error("Failed to parse JSON field:", field, e);
-    return [];
+    // Fallback for legacy data that was saved as newline-separated strings
+    return field.split('\n').map(s => s.trim()).filter(s => s.length > 0);
   }
 };
 

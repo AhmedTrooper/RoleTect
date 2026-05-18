@@ -57,21 +57,6 @@ pub async fn refine_latex_with_ai(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))
 }
 
-pub async fn fix_latex_with_ai(
-    Json(payload): Json<serde_json::Value>,
-) -> Result<Json<String>, (StatusCode, String)> {
-    let provider = payload["provider"].as_str().ok_or((StatusCode::BAD_REQUEST, "provider missing".to_string()))?;
-    let model = payload["model"].as_str().ok_or((StatusCode::BAD_REQUEST, "model missing".to_string()))?;
-    let api_key = payload["apiKey"].as_str().ok_or((StatusCode::BAD_REQUEST, "apiKey missing".to_string()))?;
-    let broken_latex = payload["brokenLatex"].as_str().ok_or((StatusCode::BAD_REQUEST, "brokenLatex missing".to_string()))?;
-    let error_logs = payload["errorLogs"].as_str().ok_or((StatusCode::BAD_REQUEST, "errorLogs missing".to_string()))?;
-
-    ai::fix_technical_errors(provider, model, api_key, broken_latex, error_logs, "LaTeX")
-        .await
-        .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))
-}
-
 pub async fn compile_latex(
     Json(payload): Json<serde_json::Value>,
 ) -> Result<Vec<u8>, (StatusCode, String)> {

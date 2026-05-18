@@ -92,8 +92,8 @@ const processJob = async () => {
       employment_type: result.details.employment_type,
       status: 'Drafting',
       raw_jd: job.value.raw_description,
-      requirements: result.details.requirements.join('\n'),
-      core_responsibilities: result.details.core_responsibilities.join('\n'),
+      requirements: JSON.stringify(result.details.requirements || []),
+      core_responsibilities: JSON.stringify(result.details.core_responsibilities || []),
       job_url: job.value.url,
     };
 
