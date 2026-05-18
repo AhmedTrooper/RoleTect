@@ -30,6 +30,21 @@ pub struct TailoredCoverLetterExport {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct ThemeExport {
+    pub id: String,
+    pub name: String,
+    pub config: String,
+    pub is_builtin: bool,
+    pub created_at: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SettingExport {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct AppDataExport {
     pub jobs: Vec<JobPayload>,
     pub base_resumes: Vec<ResumeDetail>,
@@ -37,6 +52,8 @@ pub struct AppDataExport {
     pub tailored_resumes: Vec<TailoredResumeExport>,
     pub tailored_cover_letters: Vec<TailoredCoverLetterExport>,
     pub downloads: Vec<DownloadRecord>,
+    pub themes: Vec<ThemeExport>,
+    pub app_settings: Vec<SettingExport>,
     pub compiler_state: Option<String>,
     pub exported_at: String,
 }
@@ -203,7 +220,42 @@ pub async fn export_all_data(state: State<'_, AppState>) -> Result<AppDataExport
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
 
-    // 5. Fetch Compiler State
+    // 5. Fetch Themes
+    let mut stmt = conn
+        .prepare("SELECT id, name, config, is_builtin, created_at FROM themes")
+        .map_err(|e| e.to_string())?;
+
+    let themes = stmt
+        .query_map([], |row| {
+            Ok(ThemeExport {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                config: row.get(2)?,
+                is_builtin: row.get(3)?,
+                created_at: row.get(4)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    // 6. Fetch App Settings
+    let mut stmt = conn
+        .prepare("SELECT key, value FROM app_settings")
+        .map_err(|e| e.to_string())?;
+
+    let app_settings = stmt
+        .query_map([], |row| {
+            Ok(SettingExport {
+                key: row.get(0)?,
+                value: row.get(1)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    // 7. Fetch Compiler State
     let compiler_state: Option<String> = conn
         .query_row(
             "SELECT latex_content FROM compiler_state WHERE id = 1",
@@ -221,6 +273,8 @@ pub async fn export_all_data(state: State<'_, AppState>) -> Result<AppDataExport
         tailored_resumes,
         tailored_cover_letters,
         downloads,
+        themes,
+        app_settings,
         compiler_state,
         exported_at: chrono::Local::now().to_rfc3339(),
     })
@@ -252,6 +306,10 @@ pub async fn import_data(
         tx.execute("DELETE FROM base_resumes", [])
             .map_err(|e| e.to_string())?;
         tx.execute("DELETE FROM compiler_state", [])
+            .map_err(|e| e.to_string())?;
+        tx.execute("DELETE FROM themes WHERE is_builtin = 0", [])
+            .map_err(|e| e.to_string())?;
+        tx.execute("DELETE FROM app_settings", [])
             .map_err(|e| e.to_string())?;
     }
 
@@ -425,7 +483,40 @@ pub async fn import_data(
         .map_err(|e| e.to_string())?;
     }
 
-    // 5. Import Compiler State
+    // 5. Import Themes
+    for theme in data.themes {
+        // Skip built-in themes as they are re-populated on app start
+        if theme.is_builtin { continue; }
+        
+        tx.execute(
+            "INSERT INTO themes (id, name, config, is_builtin, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(id) DO UPDATE SET 
+                name=excluded.name,
+                config=excluded.config,
+                is_builtin=excluded.is_builtin",
+            (
+                &theme.id,
+                &theme.name,
+                &theme.config,
+                &theme.is_builtin,
+                &theme.created_at,
+            ),
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    // 6. Import App Settings
+    for setting in data.app_settings {
+        tx.execute(
+            "INSERT INTO app_settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (&setting.key, &setting.value),
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    // 7. Import Compiler State
     if let Some(content) = data.compiler_state {
         tx.execute(
             "INSERT INTO compiler_state (id, latex_content) VALUES (1, ?1)

@@ -157,7 +157,8 @@ const handleImport = async (mode: 'merge' | 'overwrite') => {
     const content = await readTextFile(path as string);
     const data = JSON.parse(content);
     await invoke('import_data', { data, mode });
-    await dialog.showAlert(`Successfully ${mode === 'merge' ? 'synchronized' : 'restored'} your vault.`, 'Import Successful');
+    await dialog.showAlert(`Successfully ${mode === 'merge' ? 'synchronized' : 'restored'} your vault. The application will now reload to apply changes.`, 'Import Successful');
+    window.location.reload();
   } catch (error: any) {
     saveError.value = `Import Error: ${error.toString()}`;
   } finally {
