@@ -674,23 +674,6 @@ const activeFileName = computed(() => {
 
 <template>
   <div class="compiler-container">
-    <!-- Loading Overlay -->
-    <AnimatePresence>
-      <Motion
-        v-if="isCompiling || isFixing || isRefining"
-        :initial="{ opacity: 0 }"
-        :animate="{ opacity: 1 }"
-        :exit="{ opacity: 0 }"
-        class="loading-overlay"
-      >
-        <div class="loader-content">
-          <RotateCw :size="48" class="spinner" />
-          <h2>{{ isFixing ? 'AI DEBUGGING...' : isRefining ? 'AI REFINING...' : 'COMPILING LATEX...' }}</h2>
-          <p>Please wait while the engine processes your code.</p>
-        </div>
-      </Motion>
-    </AnimatePresence>
-
     <header class="compiler-header">
       <div class="header-left">
         <button class="toggle-sidebar-btn" @click="toggleSidebar" title="Toggle Sidebar">
@@ -944,6 +927,22 @@ const activeFileName = computed(() => {
 
         <!-- Preview Section -->
         <section class="preview-section">
+          <!-- Loading Overlay (Scoped to Preview) -->
+          <AnimatePresence>
+            <Motion
+              v-if="isCompiling || isFixing || isRefining"
+              :initial="{ opacity: 0 }"
+              :animate="{ opacity: 1 }"
+              :exit="{ opacity: 0 }"
+              class="loading-overlay"
+            >
+              <div class="loader-content">
+                <RotateCw :size="32" class="spinner" />
+                <h3>{{ isFixing ? 'DEBUGGING...' : isRefining ? 'REFINING...' : 'COMPILING...' }}</h3>
+              </div>
+            </Motion>
+          </AnimatePresence>
+
           <div class="pane-header">
             <Terminal :size="14" />
             <span>PDF PREVIEW</span>
@@ -1404,6 +1403,7 @@ const activeFileName = computed(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
 }
 
 .editor-section {
@@ -1657,17 +1657,32 @@ const activeFileName = computed(() => {
 }
 
 .loading-overlay {
-  position: fixed;
-  top: 0;
+  position: absolute;
+  top: 32px;
   left: 0;
   width: 100%;
-  height: 100%;
-  background: rgba(13, 17, 23, 0.85);
-  backdrop-filter: blur(8px);
-  z-index: 10000;
+  height: calc(100% - 32px);
+  background: rgba(13, 17, 23, 0.9);
+  backdrop-filter: blur(4px);
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loader-content h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  margin: 0;
 }
 
 .spinner {
