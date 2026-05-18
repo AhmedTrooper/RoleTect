@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (response && response.success) {
         showStatus("Job ingested into vault!", "success");
       } else {
-        throw new Error(response?.error || "Connection failed. Is CSynth open?");
+        throw new Error(response?.error || "Connection failed. Is RoleFlux open?");
       }
     } catch (err) {
       showStatus("Error: " + err.message, "error");

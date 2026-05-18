@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { invoke } from '@tauri-apps/api/core';
 import { InboxJob } from '../store/inbox';
 import { useSettingsStore } from '../store/settings';
 import { useDialogStore } from '../store/dialog';
-import { Motion } from 'motion-v';
 import { 
   ArrowLeft, 
   ExternalLink, 
   Cpu, 
   Trash2, 
   Clock, 
-  CheckCircle,
   RefreshCw,
   Globe,
-  FileText
+  FileText,
+  Copy,
+  Check,
+  Hash,
+  Type
 } from '@lucide/vue';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,6 +29,16 @@ const dialog = useDialogStore();
 const job = ref<InboxJob | null>(null);
 const isLoading = ref(true);
 const isProcessing = ref(false);
+const isCopied = ref(false);
+
+const stats = computed(() => {
+  if (!job.value) return { chars: 0, words: 0 };
+  const text = job.value.raw_description || '';
+  return {
+    chars: text.length,
+    words: text.split(/\s+/).filter(w => w.length > 0).length
+  };
+});
 
 const loadJob = async () => {
   isLoading.value = true;
@@ -44,6 +57,13 @@ const loadJob = async () => {
 onMounted(loadJob);
 
 const goBack = () => router.push('/inbox');
+
+const copyToClipboard = async () => {
+  if (!job.value) return;
+  await writeText(job.value.raw_description);
+  isCopied.value = true;
+  setTimeout(() => isCopied.value = false, 2000);
+};
 
 const processJob = async () => {
   if (!job.value || isProcessing.value) return;
@@ -158,8 +178,24 @@ const deleteJob = async () => {
 
           <div class="section-card description-card">
             <div class="card-header">
-              <FileText :size="18" />
-              <h3>Raw Content</h3>
+              <div class="header-left">
+                <FileText :size="18" />
+                <h3>Raw Content</h3>
+              </div>
+              <div class="header-right">
+                <div class="stat-item">
+                  <Hash :size="12" />
+                  <span>{{ stats.chars.toLocaleString() }} chars</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                  <Type :size="12" />
+                  <span>{{ stats.words.toLocaleString() }} words</span>
+                </div>
+                <button class="copy-small-btn" @click="copyToClipboard" :title="isCopied ? 'Copied!' : 'Copy to clipboard'">
+                  <component :is="isCopied ? Check : Copy" :size="14" />
+                </button>
+              </div>
             </div>
             <div class="content-box">
               <pre class="raw-text">{{ job.raw_description }}</pre>
@@ -268,11 +304,44 @@ const deleteJob = async () => {
 
 .card-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
   color: var(--accent);
   margin-bottom: 20px;
 }
+
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-divider { width: 1px; height: 12px; background: var(--line); }
+
+.copy-small-btn {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+  margin-left: 8px;
+}
+
+.copy-small-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 .card-header h3 { margin: 0; font-size: 1.1rem; color: var(--ink); }
 

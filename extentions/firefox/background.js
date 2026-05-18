@@ -1,4 +1,4 @@
-// Background Script: Handles network requests to the local CSynth server (Firefox)
+// Background Script: Handles network requests to the local RoleFlux server (Firefox)
 browser.runtime.onMessage.addListener((request, sender) => {
   if (request.action === "START_EXTRACTION") {
     return handleExtraction(request.selector);
@@ -35,7 +35,7 @@ async function handleExtraction(selector) {
 
     if (!domData.success) throw new Error(domData.error);
 
-    // 5. POST to CSynth local server
+    // 5. POST to RoleFlux local server
     const serverUrl = `http://127.0.0.1:${port}/ingest`;
     
     const serverResponse = await fetch(serverUrl, {
@@ -58,7 +58,7 @@ async function handleExtraction(selector) {
     return { success: true };
 
   } catch (error) {
-    console.error("CSynth Firefox Extension Error:", error);
+    console.error("RoleFlux Firefox Extension Error:", error);
     return { success: false, error: error.message };
   }
 }

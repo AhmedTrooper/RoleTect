@@ -1,8 +1,8 @@
-# CSynth 🔬
+# RoleFlux 🔬
 
 ### Surgical AI Resume Tailoring & LaTeX Orchestration
 
-CSynth
+RoleFlux
  is a high-performance desktop application designed for professionals who treat their professional narrative as a technical specification. It integrates sovereign LLM orchestration with professional TeX typesetting to ensure your resume is not just tailored, but surgically optimized for every opportunity.
 
 ---
@@ -22,9 +22,9 @@ CSynth
 ## 🚀 Getting Started
 
 ### For Users
-To download the latest stable version of CSynth, visit the **Releases** section:
+To download the latest stable version of RoleFlux, visit the **Releases** section:
 
-👉 [**Download CSynth Releases**](https://github.com/AhmedTrooper/CSynth/releases)
+👉 [**Download RoleFlux Releases**](https://github.com/AhmedTrooper/RoleFlux/releases)
 
 ---
 
@@ -36,13 +36,13 @@ To download the latest stable version of CSynth, visit the **Releases** section:
 
 ### Technical Demo
 Watch the engine in action:
-👉 [**CSynth Technical Demo (YouTube)**](https://www.youtube.com/@AhmedTrooper)
+👉 [**RoleFlux Technical Demo (YouTube)**](https://www.youtube.com/@AhmedTrooper)
 
 ---
 
 ## 🛠️ For Developers
 
-We welcome developers to experiment with the CSynth engine. Please follow the instructions below to set up your environment.
+We welcome developers to experiment with the RoleFlux engine. Please follow the instructions below to set up your environment.
 
 ### Prerequisites
 - [Bun](https://bun.sh/) (Fast JavaScript runtime & package manager)
@@ -54,10 +54,10 @@ Please **clone the `dev` branch** for the latest features and patches:
 
 ```bash
 # Clone the repository
-git clone -b dev https://github.com/AhmedTrooper/CSynth.git
+git clone -b dev https://github.com/AhmedTrooper/RoleFlux.git
 
 # Navigate to the project
-cd CSynth
+cd RoleFlux
 
 # Install dependencies
 bun install
@@ -77,7 +77,7 @@ bun run tauri build
 
 ## 🗺️ System Architecture
 
-CSynth
+RoleFlux
  uses a bridge architecture to combine a modern web frontend with a high-performance Rust backend.
 
 ```mermaid
@@ -125,7 +125,7 @@ We love contributions! To keep the repository clean and stable, please follow th
 
 ## ⚖️ License
 
-CSynth
+RoleFlux
  is dual-licensed under the [MIT License](LICENSE) and [Apache License 2.0](LICENSE_APACHE).
 
 ---

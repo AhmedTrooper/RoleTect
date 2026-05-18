@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "CSynth Ingest (Firefox)",
+  "name": "RoleFlux Ingest (Firefox)",
   "version": "1.0",
-  "description": "Captures job listings and sends them to your CSynth vault.",
+  "description": "Captures job listings and sends them to your RoleFlux vault.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "csynth-ingest@ahmedtrooper.com",
+      "id": "roleflux-ingest@ahmedtrooper.com",
       "strict_min_version": "115.0"
     }
   },

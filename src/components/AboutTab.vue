@@ -7,11 +7,11 @@ import { open } from '@tauri-apps/plugin-shell';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { Motion } from 'motion-v';
 
-const appName = ref('CSynth');
-const appVersion = ref('0.1.0');
+const appName = ref('RoleFlux');
+const appVersion = ref('');
 const tauriVersion = ref('');
 const osType = ref('');
-const identifier = 'com.ahmedtrooper.csynth';
+const identifier = 'com.ahmedtrooper.roleflux';
 const copied = ref(false);
 
 onMounted(async () => {
@@ -97,14 +97,14 @@ const copyIdentifier = async () => {
 
       <div class="description-box">
         <p>
-          CSynth
+          RoleFlux
  integrates sovereign LLM orchestration with professional TeX typesetting. 
           Built for those who treat their professional narrative as a technical specification.
         </p>
       </div>
 
       <div class="action-row">
-        <button class="btn-premium" @click="openLink('https://github.com/AhmedTrooper/CSynth')">
+        <button class="btn-premium" @click="openLink('https://github.com/AhmedTrooper/RoleFlux')">
           <Code :size="14" />
           <span>Source Repository</span>
         </button>
@@ -391,3 +391,4 @@ const copyIdentifier = async () => {
   .about-card { padding: 32px; }
 }
 </style>
+>

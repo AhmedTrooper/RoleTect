@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "CSynth Ingest",
+  "name": "RoleFlux Ingest",
   "version": "1.0",
-  "description": "Captures job listings and sends them to your CSynth vault.",
+  "description": "Captures job listings and sends them to your RoleFlux vault.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.svg"

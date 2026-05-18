@@ -101,8 +101,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: csynth-v__VERSION__
-          releaseName: "CSynth v__VERSION__"
+          tagName: roleflux-v__VERSION__
+          releaseName: "RoleFlux v__VERSION__"
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

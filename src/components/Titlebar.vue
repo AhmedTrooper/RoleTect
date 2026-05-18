@@ -26,7 +26,7 @@ onMounted(async () => {
   <div class="titlebar" data-tauri-drag-region>
     <div class="titlebar-left" data-tauri-drag-region>
       <div class="logo-dot" data-tauri-drag-region></div>
-      <span class="app-title" data-tauri-drag-region>CSynth</span>
+      <span class="app-title" data-tauri-drag-region>RoleFlux</span>
     </div>
     
     <div class="titlebar-center" data-tauri-drag-region>
