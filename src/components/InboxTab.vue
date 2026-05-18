@@ -22,7 +22,9 @@ import {
   RefreshCw,
   Cpu,
   ChevronRight,
-  ClipboardList
+  ClipboardList,
+  Filter,
+  ArrowUpDown
 } from '@lucide/vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 
@@ -37,13 +39,35 @@ const selectedJobs = ref<Set<string>>(new Set());
 const isProcessing = ref(false);
 const processingProgress = ref({ current: 0, total: 0 });
 
+// Filtering & Sorting
+const statusFilter = ref('All');
+const sortBy = ref('date-desc');
+const statuses = ['All', 'Pending', 'Processed'];
+
+// Individual processing states
+const processingJobs = ref<Set<string>>(new Set());
+
 onMounted(async () => {
   await inboxStore.loadJobs();
   await inboxStore.loadExtensionConfig();
 });
 
 const filteredJobs = computed(() => {
-  return inboxStore.jobs;
+  let result = [...inboxStore.jobs];
+
+  // Status Filter
+  if (statusFilter.value !== 'All') {
+    result = result.filter(j => j.status === statusFilter.value);
+  }
+
+  // Sort
+  result.sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return sortBy.value === 'date-desc' ? dateB - dateA : dateA - dateB;
+  });
+
+  return result;
 });
 
 const handleCardClick = (job: InboxJob) => {
@@ -81,6 +105,7 @@ const copyToClipboard = async (text: string, label: string) => {
 };
 
 const processJob = async (inboxJob: InboxJob) => {
+  processingJobs.value.add(inboxJob.id);
   try {
     const apiKey = await settingsStore.getDecryptedKey();
     if (!apiKey) {
@@ -118,16 +143,27 @@ const processJob = async (inboxJob: InboxJob) => {
     console.error('Processing error:', error);
     await dialog.showAlert(`Failed to process job: ${error.toString()}`, 'Error');
     return false;
+  } finally {
+    processingJobs.value.delete(inboxJob.id);
   }
 };
 
 const processSelected = async () => {
   if (selectedJobs.value.size === 0) return;
   
-  isProcessing.value = true;
-  processingProgress.value = { current: 0, total: selectedJobs.value.size };
+  const jobsToProcess = inboxStore.jobs.filter(j => selectedJobs.value.has(j.id));
+  const alreadyProcessedCount = jobsToProcess.filter(j => j.status === 'Processed').length;
 
-  const jobsToProcess = inboxStore.jobs.filter(j => selectedJobs.value.has(j.id) && j.status === 'Pending');
+  if (alreadyProcessedCount > 0) {
+    const confirmed = await dialog.showConfirm(
+      `${alreadyProcessedCount} of the selected jobs have already been processed. Re-processing will create duplicate entries in your main Jobs vault. Do you want to continue?`,
+      'Duplicate Warning'
+    );
+    if (!confirmed) return;
+  }
+
+  isProcessing.value = true;
+  processingProgress.value = { current: 0, total: jobsToProcess.length };
   
   for (const job of jobsToProcess) {
     processingProgress.value.current++;
@@ -233,6 +269,63 @@ const getStatusClass = (status: string) => {
       </div>
     </header>
 
+    <div class="filters-bar" v-if="!isSelectionMode">
+      <div class="controls">
+        <div 
+          class="filter-group icon-select"
+          @mouseenter="activeTooltip = 'status-filter'"
+          @mouseleave="activeTooltip = null"
+        >
+          <div class="icon-indicator">
+            <Filter :size="16" />
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'status-filter'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                class="floating-message tooltip-top"
+              >
+                Filter Status
+              </Motion>
+            </AnimatePresence>
+          </div>
+          <select v-model="statusFilter">
+            <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <div 
+          class="filter-group icon-select"
+          @mouseenter="activeTooltip = 'sort-filter'"
+          @mouseleave="activeTooltip = null"
+        >
+          <div class="icon-indicator">
+            <ArrowUpDown :size="16" />
+            <AnimatePresence>
+              <Motion
+                v-if="activeTooltip === 'sort-filter'"
+                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                class="floating-message tooltip-top"
+              >
+                Sort Order
+              </Motion>
+            </AnimatePresence>
+          </div>
+          <select v-model="sortBy">
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="inbox-stats">
+        <span>Showing {{ filteredJobs.length }} captures</span>
+      </div>
+    </div>
+
     <div class="inbox-layout">
       <div class="main-content">
         <div v-if="isProcessing" class="processing-banner">
@@ -300,9 +393,11 @@ const getStatusClass = (status: string) => {
                   v-if="job.status === 'Pending'"
                   class="process-btn" 
                   @click.stop="processJob(job)"
-                  :disabled="isProcessing"
+                  :disabled="isProcessing || processingJobs.has(job.id)"
                 >
-                  <Cpu :size="14" /> Process with AI
+                  <RefreshCw v-if="processingJobs.has(job.id)" :size="14" class="spinner" />
+                  <Cpu v-else :size="14" /> 
+                  {{ processingJobs.has(job.id) ? 'Analyzing...' : 'Process with AI' }}
                 </button>
                 <div v-else class="done-indicator">
                   <CheckCircle :size="14" /> Processed
@@ -370,6 +465,62 @@ const getStatusClass = (status: string) => {
 
 .page-header h1 { font-size: 2.2rem; margin: 0; color: var(--ink); }
 .subtitle { color: var(--muted); margin: 8px 0 0; }
+
+.filters-bar {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 12px 20px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+
+.controls { display: flex; gap: 12px; }
+
+.filter-group { display: flex; align-items: center; gap: 6px; position: relative; }
+
+.icon-select {
+  flex-direction: row;
+  align-items: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px 0 12px;
+  transition: border-color 0.2s;
+}
+
+.icon-select:focus-within {
+  border-color: var(--accent);
+}
+
+.icon-indicator {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.filter-group select {
+  padding: 8px 24px 8px 4px;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--ink);
+  outline: none;
+}
+
+.inbox-stats {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
 .header-actions { display: flex; gap: 12px; }
 
