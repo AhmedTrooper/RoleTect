@@ -174,14 +174,16 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                     .ok_or_else(|| "Invalid main file name".to_string())?;
 
                 let mut sb = tectonic::driver::ProcessingSessionBuilder::default();
+                let temp_output_dir = std::env::temp_dir().join(format!("cvsynth-{}", nanoid::nanoid!()));
+                std::fs::create_dir_all(&temp_output_dir).map_err(|e| format!("Failed to create temp output dir: {}", e))?;
+
                 sb.bundle(bundle)
                     .primary_input_path(&main_file_path)
-                    .tex_input_name(&logical_input_name)
+                    .tex_input_name("texput.tex")
                     .filesystem_root(&workspace_path)
-                    .output_dir(&workspace_path) // Force output to the workspace root
+                    .output_dir(&temp_output_dir) // Use temp dir for ALL outputs
                     .format_name("latex")
-                    .output_format(tectonic::driver::OutputFormat::Pdf)
-                    .build_date(std::time::SystemTime::now());
+                    .output_format(tectonic::driver::OutputFormat::Pdf);
 
                 let mut sess = sb.create(&mut status)
                     .map_err(|e| format!("Failed to create Tectonic session: {}\n\nLogs:\n{}", e, status.logs))?;
@@ -189,21 +191,24 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                 sess.run(&mut status)
                     .map_err(|e| format!("Compilation failed: {}\n\nLogs:\n{}", e, status.logs))?;
 
-                // Since we forced output_dir to workspace_path, the PDF should be in the root
-                let mut pdf_path = workspace_path.join(&logical_input_name);
-                pdf_path.set_extension("pdf");
+                // The PDF will be named texput.pdf in the temp_output_dir
+                let temp_pdf_path = temp_output_dir.join("texput.pdf");
                 
-                if pdf_path.exists() {
-                    std::fs::read(&pdf_path).map_err(|e| format!("Failed to read generated PDF: {}", e))
+                if temp_pdf_path.exists() {
+                    let pdf_data = std::fs::read(&temp_pdf_path).map_err(|e| format!("Failed to read generated PDF: {}", e))?;
+                    
+                    // Also copy it to the workspace root for the user, naming it after the original file
+                    let mut final_pdf_path = workspace_path.join(&logical_input_name);
+                    final_pdf_path.set_extension("pdf");
+                    let _ = std::fs::write(&final_pdf_path, &pdf_data);
+
+                    // Clean up temp dir
+                    let _ = std::fs::remove_dir_all(&temp_output_dir);
+
+                    Ok(pdf_data)
                 } else {
-                    // Fallback: check next to the file just in case Tectonic ignored output_dir
-                    let mut fallback_path = main_file_path.clone();
-                    fallback_path.set_extension("pdf");
-                    if fallback_path.exists() {
-                        std::fs::read(&fallback_path).map_err(|e| format!("Failed to read fallback PDF: {}", e))
-                    } else {
-                        Err(format!("Compilation successful, but PDF was not found at {:?} or {:?}\n\nLogs:\n{}", pdf_path, fallback_path, status.logs))
-                    }
+                    let _ = std::fs::remove_dir_all(&temp_output_dir);
+                    Err(format!("Compilation appeared successful, but PDF was not found at {:?}\n\nLogs:\n{}", temp_pdf_path, status.logs))
                 }
             })
             .map_err(|e| format!("Failed to spawn compiler thread: {}", e))?;
