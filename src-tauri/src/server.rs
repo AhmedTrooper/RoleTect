@@ -53,7 +53,6 @@ pub async fn start_server(app_handle: AppHandle) {
         match listener {
             Ok(listener) => {
                 println!("Extension server listening on http://{}", addr);
-                // We can't easily return the port to the main thread to update UI from here
                 // but we can save it to settings if we want.
                 let handle = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
