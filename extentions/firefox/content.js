@@ -50,6 +50,11 @@ function extractStructuredData(element, userExcludeSelector) {
   // 3. Remove user-defined excluded elements if provided
   if (userExcludeSelector) {
     try {
+      // If the cloned element itself matches the exclude selector, drop it entirely
+      if (clone.matches && clone.matches(userExcludeSelector)) {
+        return "";
+      }
+      // Otherwise, remove any matching child elements
       clone.querySelectorAll(userExcludeSelector).forEach((el) => el.remove());
     } catch (e) {
       console.error("Invalid user exclude selector:", userExcludeSelector);
