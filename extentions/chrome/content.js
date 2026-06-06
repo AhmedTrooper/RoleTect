@@ -13,11 +13,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
       }
 
-      // Process each element found and join their results with double newlines
-      const finalCleanData = Array.from(targetElements)
+      // Process each element found and join their results
+      const allExtractedData = Array.from(targetElements)
         .map(el => extractStructuredData(el, request.excludeSelector))
         .filter(text => text.length > 0)
-        .join("\n\n");
+        .join(". ");
+
+      // Final pass to ensure no double periods or mess from joining
+      const finalCleanData = allExtractedData
+        .replace(/\.{2,}/g, ".")
+        .replace(/\. \./g, ".")
+        .trim();
 
       sendResponse({
         success: true,
@@ -32,7 +38,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
- * Cleans the DOM node and extracts a precise, structured text representation.
+ * Cleans the DOM node and extracts a highly compressed, token-efficient string.
  */
 function extractStructuredData(element, userExcludeSelector) {
   // 1. Clone the element so we don't accidentally mutate the live webpage
@@ -40,7 +46,7 @@ function extractStructuredData(element, userExcludeSelector) {
 
   // 2. Remove noisy tags that confuse AI and bloat the payload
   const noiseSelectors =
-    "script, style, noscript, svg, img, iframe, nav, footer, button, header, aside, .visually-hidden";
+    "script, style, noscript, svg, img, iframe, nav, footer, button, .visually-hidden";
   clone.querySelectorAll(noiseSelectors).forEach((el) => el.remove());
 
   // 3. Remove user-defined excluded elements if provided
@@ -52,24 +58,36 @@ function extractStructuredData(element, userExcludeSelector) {
     }
   }
 
-  // 4. Temporarily append to DOM to allow browser to natively calculate innerText
-  // This preserves proper spacing for lists, paragraphs, and headers without duplication.
-  const tempContainer = document.createElement("div");
-  tempContainer.style.position = "fixed";
-  tempContainer.style.left = "-9999px";
-  tempContainer.style.visibility = "hidden";
-  tempContainer.appendChild(clone);
-  document.body.appendChild(tempContainer);
+  // 4. Create an array to hold the extracted text blocks
+  let structuredContent = [];
 
-  // 5. Extract text with native browser block spacing
-  let rawText = tempContainer.innerText || "";
+  // 5. Walk through the cleaned DOM and grab text from block elements
+  const blockElements = clone.querySelectorAll(
+    "h1, h2, h3, h4, p, li, article, section",
+  );
 
-  // 6. Cleanup
-  document.body.removeChild(tempContainer);
+  if (blockElements.length > 0) {
+    blockElements.forEach((el) => {
+      // Get text and skip empty blocks
+      let text = el.innerText.trim();
+      if (!text) return;
 
-  // 7. Token-squash while preserving context and lists
-  return rawText
-    .replace(/[ \t]+/g, " ")       // Squash horizontal spaces
-    .replace(/[\r\n]{3,}/g, "\n\n") // Squash massive vertical gaps into max 2 newlines
-    .trim();
+      // Push raw text
+      structuredContent.push(text);
+    });
+  } else {
+    // Fallback if the site uses non-semantic formatting (no p, h1, li tags)
+    structuredContent.push(clone.innerText.trim());
+  }
+
+  // 5. Join all extracted sections with a period and space
+  let finalString = structuredContent.join(". ");
+
+  // 6. The Ultimate Token-Squashing RegEx Pipeline
+  return finalString
+    .replace(/[\n\r]+/g, ". ") // Turns ANY newline or carriage return into a period
+    .replace(/\s+/g, " ") // Squashes massive horizontal gaps into 1 single space
+    .replace(/\.{2,}/g, ".") // Squashes weird double periods (e.g. "...") into 1 period
+    .replace(/\. \./g, ".") // Cleans up messy period-space-period gaps
+    .trim(); // Chops off any spaces at the very beginning or end
 }
