@@ -36,7 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Built-in Defaults
   const BUILT_IN_SITES = [
-    { title: "LinkedIn", selector: ".jobs-search__job-details--wrapper" }
+    { title: "LinkedIn", selector: ".jobs-search__job-details--wrapper" },
+    { title: "Indeed", selector: "#jobDescriptionText" },
+    { title: "Glassdoor", selector: ".JobDetails_jobDescription__uW_fK" },
+    { title: "Wellfound (AngelList)", selector: ".styles_jobDescription__xL_qW" },
+    { title: "Y Combinator (WnYC)", selector: ".job-description" },
+    { title: "Greenhouse", selector: "#content" },
+    { title: "Lever", selector: ".section-wrapper.page-full-width" },
+    { title: "Workday", selector: "[data-automation-id='jobPostingDescription']" }
   ];
 
   const hostGroups = {
@@ -124,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${site.exclude ? `<code style="display: block; font-size: 9px; color: #f85149; margin-top: 2px;">EX: ${site.exclude}</code>` : ''}
           </div>
           <div style="display: flex; flex-direction: column; gap: 4px;">
+            <button class="edit-btn secondary-btn" data-index="${index}" style="font-size: 9px !important; padding: 2px 5px !important; border-color: var(--accent) !important;">Edit</button>
             <button class="delete-btn" data-index="${index}">Delete</button>
             ${defaultSite ? `<button class="reset-site-btn secondary-btn" style="font-size: 9px !important; padding: 2px 5px !important;" data-title="${site.title}" data-index="${index}">Reset</button>` : ''}
           </div>
@@ -161,15 +169,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.querySelectorAll('.reset-site-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', (e) => {
         const title = e.target.dataset.title;
         const index = parseInt(e.target.dataset.index);
         const defaultSite = BUILT_IN_SITES.find(s => s.title === title);
         if (defaultSite) {
           siteMaps[index].selector = defaultSite.selector;
-          await saveSiteMaps();
+          saveSiteMaps();
           showStatus(`${title} reset to default.`, "neutral");
         }
+      });
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        const site = siteMaps[index];
+        newSiteTitle.value = site.title;
+        newSiteSelector.value = site.selector;
+        newSiteExclude.value = site.exclude || '';
+        
+        addSiteBtn.textContent = "Update Site Map";
+        addSiteBtn.dataset.editIndex = index;
+        newSiteTitle.focus();
       });
     });
 
@@ -199,8 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSiteMaps();
   }
 
-  // Add Site Map
-  addSiteBtn.addEventListener('click', async () => {
+  // Add/Update Site Map
+  addSiteBtn.addEventListener('click', () => {
     const title = newSiteTitle.value.trim();
     const selector = newSiteSelector.value.trim();
     const exclude = newSiteExclude.value.trim();
@@ -210,12 +232,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    siteMaps.push({ title, selector, exclude });
+    if (addSiteBtn.dataset.editIndex !== undefined) {
+      const index = parseInt(addSiteBtn.dataset.editIndex);
+      siteMaps[index] = { title, selector, exclude };
+      delete addSiteBtn.dataset.editIndex;
+      addSiteBtn.textContent = "Add Site Map";
+      showStatus("Site map updated!", "success");
+    } else {
+      siteMaps.push({ title, selector, exclude });
+      showStatus("Site map added!", "success");
+    }
+
     newSiteTitle.value = '';
     newSiteSelector.value = '';
     newSiteExclude.value = '';
-    await saveSiteMaps();
-    showStatus("Site map added!", "success");
+    saveSiteMaps();
   });
 
   // Site Selector Change

@@ -37,3 +37,4 @@ potential_features.txt
 *.pem
 *.tsbuildinfo
 next-env.d.ts
+application/api/roletect.db
