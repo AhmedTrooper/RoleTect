@@ -731,7 +731,7 @@ const handleSave = async () => {
             >Clear Input</button>
           </div>
           <p v-if="providerInput === 'bedrock'">
-            AWS Bedrock uses your AWS IAM credentials. Leave blank to use system AWS environment variables or <code>~/.aws/credentials</code>.
+            AWS Bedrock uses your AWS IAM credentials. Please enter them below to save them securely in your local vault.
           </p>
           <p v-else>Your {{ providerName }} key is stored in an encrypted vault. It is never sent to our servers.</p>
         </div>
@@ -743,7 +743,7 @@ const handleSave = async () => {
               v-model="apiKeyInput" 
               type="password" 
               :placeholder="providerInput === 'bedrock' 
-                ? (store.hasSecureKey ? '•••••••••••••••• (Credentials saved)' : 'access_key_id:secret_access_key:region (optional)')
+                ? (store.hasSecureKey ? '•••••••••••••••• (Credentials saved)' : 'access_key_id:secret_access_key:region')
                 : (store.hasSecureKey ? '•••••••••••••••• (Key saved)' : 'Enter API Key...')"
               spellcheck="false"
               class="form-input"

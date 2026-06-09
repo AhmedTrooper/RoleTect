@@ -231,16 +231,9 @@ export const useSettingsStore = defineStore('settings', () => {
       if (keyBytes && keyBytes.length > 0) {
         return new TextDecoder().decode(keyBytes);
       }
-      if (targetProvider === 'bedrock') {
-        return "bedrock_env_auth";
-      }
       return null;
     } catch (error) {
       console.error("Stronghold get error:", error);
-      const targetProvider = provider || selectedAiProvider.value;
-      if (targetProvider === 'bedrock') {
-        return "bedrock_env_auth";
-      }
       return null;
     }
   };
