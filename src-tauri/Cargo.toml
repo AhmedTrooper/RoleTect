@@ -23,7 +23,7 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.39.0", features = ["bundled"] }
-rig = { version = "0.37.0", features = ["gemini-grpc"] }
+rig = { version = "0.38.1", features = ["gemini-grpc"] }
 tokio = "1.52.3"
 tauri-plugin-stronghold = "2"
 nanoid = "0.5.0"
@@ -41,6 +41,10 @@ chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1.0.102"
 axum = "0.8.9"
 tower-http = { version = "0.6.10", features = ["cors"] }
+rig-bedrock = "0.38.1"
+aws-config = "1.8.5"
+aws-sdk-bedrockruntime = "1.124.0"
+
 
 [profile.dev.package.rust-argon2]
 opt-level = 3

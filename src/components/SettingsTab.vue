@@ -171,7 +171,8 @@ const providers = [
   { id: 'openai', name: 'OpenAI' },
   { id: 'gemini', name: 'Google Gemini' },
   { id: 'anthropic', name: 'Anthropic Claude' },
-  { id: 'groq', name: 'Groq (Ultra-Fast)' }
+  { id: 'groq', name: 'Groq (Ultra-Fast)' },
+  { id: 'bedrock', name: 'AWS Bedrock' }
 ];
 
 const modelsByProvider: Record<string, {id: string, name: string}[]> = {
@@ -332,6 +333,56 @@ const modelsByProvider: Record<string, {id: string, name: string}[]> = {
     { id: 'glm-5.1', name: 'GLM-5.1' },
     { id: 'moonshotai/kimi-k2-instruct-0905', name: 'Kimi K2 Instruct (Reasoning)' },
     { id: 'minimaxai/minimax-m2.5', name: 'Minimax M2.5 (Enterprise)' }
+  ],
+  
+  bedrock: [
+    // --- Deep Reasoning & Thinking (Heavy Logic, Code, Math) ---
+    { id: 'deepseek.r1-v1:0', name: 'DeepSeek R1' },
+    { id: 'anthropic.claude-opus-4-8', name: 'Claude Opus 4.8' },
+    { id: 'anthropic.claude-opus-4-7', name: 'Claude Opus 4.7' },
+    { id: 'anthropic.claude-opus-4-6', name: 'Claude Opus 4.6' },
+    { id: 'openai.gpt-5-5-v1:0', name: 'GPT-5.5' },
+    { id: 'moonshot.kimi-k2-thinking-v1:0', name: 'Kimi K2 Thinking' },
+    { id: 'mistral.mistral-large-2407-v1:0', name: 'Mistral Large 3' },
+    { id: 'mistral.devstral-2-123b-v1:0', name: 'Devstral 2 123B' },
+    { id: 'qwen.qwen3-coder-next-v1:0', name: 'Qwen3 Coder Next' },
+    { id: 'ai21.jamba-1-5-large-v1:0', name: 'Jamba 1.5 Large' },
+
+    // --- General Purpose & Balanced (RAG, Standard Chat) ---
+    { id: 'anthropic.claude-sonnet-4-6', name: 'Claude Sonnet 4.6' },
+    { id: 'anthropic.claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
+    { id: 'anthropic.claude-3-5-sonnet-20241022-v2:0', name: 'Claude 3.5 Sonnet v2' },
+    { id: 'openai.gpt-5-4-v1:0', name: 'GPT-5.4' },
+    { id: 'amazon.nova-pro-v1:0', name: 'Amazon Nova Pro' },
+    { id: 'meta.llama4-maverick-17b-instruct-v1:0', name: 'Llama 4 Maverick 17B Instruct' },
+    { id: 'meta.llama4-scout-17b-instruct-v1:0', name: 'Llama 4 Scout 17B Instruct' },
+    { id: 'meta.llama3-3-70b-instruct-v1:0', name: 'Llama 3.3 70B Instruct' },
+    { id: 'google.gemma-3-27b-pt-v1:0', name: 'Gemma 3 27B PT' },
+    { id: 'z-ai.glm-4-7-v1:0', name: 'GLM 4.7' },
+
+    // --- Light & Fast (High Throughput, Simple Classification) ---
+    { id: 'anthropic.claude-haiku-4-5', name: 'Claude Haiku 4.5' },
+    { id: 'anthropic.claude-3-5-haiku-20241022-v1:0', name: 'Claude 3.5 Haiku' },
+    { id: 'amazon.nova-2-lite-v1:0', name: 'Amazon Nova 2 Lite' },
+    { id: 'amazon.nova-sonic-v1:0', name: 'Amazon Nova Sonic' },
+    { id: 'amazon.nova-micro-v1:0', name: 'Amazon Nova Micro' },
+    { id: 'deepseek.v3-2-v1:0', name: 'DeepSeek V3.2' },
+    { id: 'deepseek.v3-1-v1:0', name: 'DeepSeek V3.1' },
+    { id: 'mistral.ministral-3-8b-v1:0', name: 'Ministral 3 8B' },
+    { id: 'z-ai.glm-4-7-flash-v1:0', name: 'GLM 4.7 Flash' },
+    { id: 'ai21.jamba-1-5-mini-v1:0', name: 'Jamba 1.5 Mini' },
+
+    // --- Vision, Multimodal & Specialized ---
+    { id: 'meta.llama3-2-90b-instruct-v1:0', name: 'Llama 3.2 90B Vision' },
+    { id: 'meta.llama3-2-11b-instruct-v1:0', name: 'Llama 3.2 11B Vision' },
+    { id: 'mistral.pixtral-large-2502-v1:0', name: 'Pixtral Large' },
+    { id: 'qwen.qwen3-vl-235b-v1:0', name: 'Qwen3 VL 235B' },
+    { id: 'google.gemma-3-12b-it-v1:0', name: 'Gemma 3 12B IT' },
+    { id: 'moonshot.kimi-k2-5-v1:0', name: 'Kimi K2.5' },
+    { id: 'minimax.m2-5-v1:0', name: 'MiniMax M2.5' },
+    { id: 'writer.palmyra-vision-7b-v1:0', name: 'Palmyra Vision 7B' },
+    { id: 'writer.palmyra-x5-v1:0', name: 'Palmyra X5' },
+    { id: 'nvidia.nemotron-3-super-120b-v1:0', name: 'NVIDIA Nemotron 3 Super 120B' }
   ]
 };
 

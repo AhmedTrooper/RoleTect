@@ -17,6 +17,7 @@ chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1.0"
 schemars = "1"
 dotenvy = "0.15"
+rig-bedrock = "0.38.1"
 
 [profile.release]
 opt-level = 3
