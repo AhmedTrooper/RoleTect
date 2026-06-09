@@ -91,6 +91,16 @@ Output the results in the requested structured format.";
                 .await
                 .map_err(|e| format!("Anthropic Parsing Error: {}", e))?
         }
+        "bedrock" => {
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let extractor = client.extractor::<JobDetails>(model).preamble(system_prompt).build();
+            extractor
+                .extract(&user_prompt)
+                .await
+                .map_err(|e| format!("Bedrock AI Parsing Error: {}", e))?
+        }
         _ => return Err(format!("Unsupported provider: {}", provider)),
     };
 
@@ -174,6 +184,16 @@ Please tailor the resume to match the job description. Return only the modified 
                 .await
                 .map_err(|e| format!("Anthropic Tailoring Error: {}", e))
         }
+        "bedrock" => {
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Bedrock AI Tailoring Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -249,6 +269,16 @@ Please tailor the cover letter to match the job description. Return only the mod
                 .await
                 .map_err(|e| format!("Anthropic Tailoring Error: {}", e))
         }
+        "bedrock" => {
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Bedrock AI Tailoring Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -313,6 +343,16 @@ Please apply the requested changes. Return only the updated LaTeX code."#,
                 .await
                 .map_err(|e| format!("Anthropic Refinement Error: {}", e))
         }
+        "bedrock" => {
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Bedrock AI Refinement Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -376,6 +416,16 @@ Please fix the LaTeX code so it compiles successfully. Return only the fixed LaT
                 .prompt(&user_prompt)
                 .await
                 .map_err(|e| format!("Anthropic Fix Error: {}", e))
+        }
+        "bedrock" => {
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Bedrock AI Fix Error: {}", e))
         }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
@@ -445,6 +495,16 @@ Please apply the requested changes. Return only the updated code."#,
                 .await
                 .map_err(|e| format!("Anthropic Refinement Error: {}", e))
         }
+        "bedrock" => {
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let agent = client.agent(model).preamble(&system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Bedrock AI Refinement Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -512,6 +572,16 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
                 .prompt(&user_prompt)
                 .await
                 .map_err(|e| format!("Anthropic Fix Error: {}", e))
+        }
+        "bedrock" => {
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let agent = client.agent(model).preamble(&system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Bedrock AI Fix Error: {}", e))
         }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
