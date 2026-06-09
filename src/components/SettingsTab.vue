@@ -730,19 +730,27 @@ const handleSave = async () => {
               @click="apiKeyInput = ''"
             >Clear Input</button>
           </div>
-          <p>Your {{ providerName }} key is stored in an encrypted vault. It is never sent to our servers.</p>
+          <p v-if="providerInput === 'bedrock'">
+            AWS Bedrock uses your AWS IAM credentials. Leave blank to use system AWS environment variables or <code>~/.aws/credentials</code>.
+          </p>
+          <p v-else>Your {{ providerName }} key is stored in an encrypted vault. It is never sent to our servers.</p>
         </div>
         
         <div class="credentials-content">
           <div class="input-group">
-            <label>{{ providerName }} Secret Key</label>
+            <label>{{ providerInput === 'bedrock' ? 'AWS Bedrock Credentials' : providerName + ' Secret Key' }}</label>
             <input 
               v-model="apiKeyInput" 
               type="password" 
-              :placeholder="store.hasSecureKey ? '•••••••••••••••• (Key saved)' : 'Enter API Key...'"
+              :placeholder="providerInput === 'bedrock' 
+                ? (store.hasSecureKey ? '•••••••••••••••• (Credentials saved)' : 'access_key_id:secret_access_key:region (optional)')
+                : (store.hasSecureKey ? '•••••••••••••••• (Key saved)' : 'Enter API Key...')"
               spellcheck="false"
               class="form-input"
             />
+            <span v-if="providerInput === 'bedrock'" class="setup-tip" style="margin-top: 8px; font-size: 0.85rem; color: var(--muted); display: block; line-height: 1.4;">
+              Format: <code>ACCESS_KEY_ID:SECRET_ACCESS_KEY:REGION</code>. If region is omitted, it defaults to <code>us-east-1</code>.
+            </span>
           </div>
 
           <div class="credentials-actions">

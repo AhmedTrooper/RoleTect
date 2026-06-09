@@ -4,6 +4,26 @@ use rig::providers::{anthropic, gemini, groq, openai};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+fn configure_aws_credentials(api_key: &str) {
+    let api_key = api_key.trim();
+    if api_key.is_empty() || api_key == "bedrock_env_auth" {
+        return;
+    }
+
+    let parts: Vec<&str> = api_key.split(':').collect();
+    if parts.len() >= 2 {
+        std::env::set_var("AWS_ACCESS_KEY_ID", parts[0].trim());
+        std::env::set_var("AWS_SECRET_ACCESS_KEY", parts[1].trim());
+        if parts.len() >= 3 {
+            std::env::set_var("AWS_REGION", parts[2].trim());
+            std::env::set_var("AWS_DEFAULT_REGION", parts[2].trim());
+        } else if std::env::var("AWS_REGION").is_err() && std::env::var("AWS_DEFAULT_REGION").is_err() {
+            std::env::set_var("AWS_REGION", "us-east-1");
+            std::env::set_var("AWS_DEFAULT_REGION", "us-east-1");
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct JobDetails {
     pub is_valid_job: bool,      // AI will set this to false if the content is not a job description
@@ -92,6 +112,7 @@ Output the results in the requested structured format.";
                 .map_err(|e| format!("Anthropic Parsing Error: {}", e))?
         }
         "bedrock" => {
+            configure_aws_credentials(api_key);
             let config = aws_config::load_from_env().await;
             let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
             let client = rig_bedrock::client::Client::from(bedrock_client);
@@ -185,6 +206,7 @@ Please tailor the resume to match the job description. Return only the modified 
                 .map_err(|e| format!("Anthropic Tailoring Error: {}", e))
         }
         "bedrock" => {
+            configure_aws_credentials(api_key);
             let config = aws_config::load_from_env().await;
             let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
             let client = rig_bedrock::client::Client::from(bedrock_client);
@@ -270,6 +292,7 @@ Please tailor the cover letter to match the job description. Return only the mod
                 .map_err(|e| format!("Anthropic Tailoring Error: {}", e))
         }
         "bedrock" => {
+            configure_aws_credentials(api_key);
             let config = aws_config::load_from_env().await;
             let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
             let client = rig_bedrock::client::Client::from(bedrock_client);
@@ -344,6 +367,7 @@ Please apply the requested changes. Return only the updated LaTeX code."#,
                 .map_err(|e| format!("Anthropic Refinement Error: {}", e))
         }
         "bedrock" => {
+            configure_aws_credentials(api_key);
             let config = aws_config::load_from_env().await;
             let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
             let client = rig_bedrock::client::Client::from(bedrock_client);
@@ -418,6 +442,7 @@ Please fix the LaTeX code so it compiles successfully. Return only the fixed LaT
                 .map_err(|e| format!("Anthropic Fix Error: {}", e))
         }
         "bedrock" => {
+            configure_aws_credentials(api_key);
             let config = aws_config::load_from_env().await;
             let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
             let client = rig_bedrock::client::Client::from(bedrock_client);
@@ -496,6 +521,7 @@ Please apply the requested changes. Return only the updated code."#,
                 .map_err(|e| format!("Anthropic Refinement Error: {}", e))
         }
         "bedrock" => {
+            configure_aws_credentials(api_key);
             let config = aws_config::load_from_env().await;
             let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
             let client = rig_bedrock::client::Client::from(bedrock_client);
@@ -574,6 +600,7 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
                 .map_err(|e| format!("Anthropic Fix Error: {}", e))
         }
         "bedrock" => {
+            configure_aws_credentials(api_key);
             let config = aws_config::load_from_env().await;
             let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
             let client = rig_bedrock::client::Client::from(bedrock_client);
