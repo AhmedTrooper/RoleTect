@@ -38,3 +38,4 @@ potential_features.txt
 *.tsbuildinfo
 next-env.d.ts
 application/api/roletect.db
+src-tauri/texput.pdf
