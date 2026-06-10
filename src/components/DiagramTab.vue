@@ -332,8 +332,8 @@ onMounted(async () => {
 
       const lastFile = await invoke<string | null>('get_last_opened_diagram');
       if (lastFile && await exists(lastFile)) {
-        // Pass skipRender=true to prevent heavy rendering on startup
-        await selectFile({ name: lastFile.split(/[/\\]/).pop() || '', path: lastFile, isDir: false }, true);
+        // Render the last opened file on startup for a seamless experience
+        await selectFile({ name: lastFile.split(/[/\\]/).pop() || '', path: lastFile, isDir: false }, false);
       }
     }
     
@@ -350,12 +350,17 @@ onMounted(async () => {
 
 onUnmounted(async () => {
   if (renderTimeout) clearTimeout(renderTimeout);
-  if (isDirty.value && settingsStore.isAutoCompileEnabled) {
+  if (isDirty.value) {
     await saveActiveFile();
   }
   // Clear preview state
   diagramSvg.value = '';
   markdownHtml.value = '';
+});
+
+// Re-render diagram immediately if user changes the editor theme to match the new colors
+watch(() => settingsStore.activeThemeId, () => {
+  renderContent();
 });
 
 // Sidebar methods
@@ -501,6 +506,10 @@ const selectFile = async (item: FileItem, skipRender = false) => {
       markdownHtml.value = '';
       renderingError.value = null;
     }
+    
+    // Safely reset programmatic flag after any watcher has run, even if content was identical
+    await nextTick();
+    isProgrammaticChange.value = false;
   } catch (err: any) {
     console.error('Failed to read file:', err);
     await dialog.showAlert(`Failed to open file: ${err.message || err.toString()}`, 'Read Error');
@@ -634,11 +643,11 @@ const renameItem = async (item: FileItem) => {
     // Sync active and main file paths
     if (activeFilePath.value === oldPath) {
       activeFilePath.value = newPath;
-      await invoke('save_diagram_last_opened_file', { path: newPath });
+      await invoke('save_last_opened_diagram', { path: newPath });
     } else if (activeFilePath.value && (activeFilePath.value.startsWith(oldPath + '/') || activeFilePath.value.startsWith(oldPath + '\\'))) {
       const rel = activeFilePath.value.substring(oldPath.length);
       activeFilePath.value = newPath + rel;
-      await invoke('save_diagram_last_opened_file', { path: newPath + rel });
+      await invoke('save_last_opened_diagram', { path: newPath + rel });
     }
 
     await refreshFileTree();
@@ -734,12 +743,72 @@ const fixWithAi = async () => {
   }
 };
 
+// Dynamically retrieve active theme colors and compile them into theme variables for Mermaid
+const getMermaidThemeVariables = () => {
+  const style = getComputedStyle(document.documentElement);
+  const getVal = (varName: string, fallback: string) => style.getPropertyValue(varName).trim() || fallback;
+
+  const bg = getVal('--bg', '#0d1117');
+  const surface = getVal('--surface', '#161b22');
+  const surfaceSoft = getVal('--surface-soft', '#21262d');
+  const line = getVal('--line', '#30363d');
+  const ink = getVal('--ink', '#c9d1d9');
+  const muted = getVal('--muted', '#8b949e');
+  const accent = getVal('--accent', '#58a6ff');
+
+  return {
+    theme: 'base' as const,
+    themeVariables: {
+      background: bg,
+      primaryColor: surface,
+      primaryTextColor: ink,
+      primaryBorderColor: accent,
+      lineColor: muted,
+      secondaryColor: surfaceSoft,
+      tertiaryColor: bg,
+      
+      // Node, note and actor text/background configurations
+      mainBkg: surface,
+      nodeBorder: accent,
+      actorBorder: accent,
+      actorBkg: surface,
+      actorTextColor: ink,
+      actorLineColor: muted,
+      signalColor: ink,
+      signalLineColor: muted,
+      labelBoxBorderColor: line,
+      labelBoxBkgColor: surface,
+      labelTextColor: ink,
+      loopLimitBorderColor: line,
+      loopLimitBkgColor: surface,
+      noteBorderColor: line,
+      noteBkgColor: surfaceSoft,
+      noteTextColor: ink,
+      
+      // Flowchart settings
+      nodeTextColor: ink,
+      edgeLabelBackground: surfaceSoft,
+      arrowheadColor: muted,
+      
+      // Entity-Relationship diagram settings
+      attributeBackgroundColor: surface,
+      attributeBorderColor: line,
+      entityBackgroundColor: surface,
+      entityBorderColor: accent,
+      
+      // Typography
+      fontFamily: style.getPropertyValue('--font-family').trim() || 'sans-serif',
+    }
+  };
+};
+
 // Rendering Logic
 const renderContent = async () => {
   const codeToRender = diagramCode.value.trim();
   if (!codeToRender) {
     diagramSvg.value = '';
     markdownHtml.value = '';
+    renderingError.value = null;
     return;
   }
   
@@ -747,27 +816,44 @@ const renderContent = async () => {
   const version = ++currentRenderVersion;
   
   isRendering.value = true;
-  renderingError.value = null;
-
-  // Clear previous content immediately so the user knows a new render started
-  diagramSvg.value = '';
-  markdownHtml.value = '';
   
   try {
+        // 1. Initialize Mermaid dynamic theme variables based on current custom UI theme
+    const config = {
+      startOnLoad: false,
+      securityLevel: 'loose' as const,
+      flowchart: { useMaxWidth: false, htmlLabels: false },
+      sequence: { useMaxWidth: false, showSequenceNumbers: true },
+      er: { useMaxWidth: false },
+      ...getMermaidThemeVariables()
+    };
+    mermaid.initialize(config);
+
     if (isMarkdown.value) {
       const rawHtml = md.render(codeToRender);
       const sanitized = DOMPurify.sanitize(rawHtml);
       
-      // If a newer render has started, discard this one
+      if (version !== currentRenderVersion) return;
+
+      // Validate embedded Mermaid blocks beforehand to prevent crashes during actual render
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = sanitized;
+      const mermaidNodes = tempDiv.querySelectorAll('.language-mermaid');
+      for (const node of mermaidNodes) {
+        const code = node.textContent || '';
+        await mermaid.parse(code);
+      }
+      
       if (version !== currentRenderVersion) return;
       
       markdownHtml.value = sanitized;
+      renderingError.value = null;
       
       await nextTick();
       // Render mermaid inside markdown
-      const mermaidNodes = previewContainer.value?.querySelectorAll('.language-mermaid');
-      if (mermaidNodes) {
-        for (const node of mermaidNodes) {
+      const renderedNodes = previewContainer.value?.querySelectorAll('.language-mermaid');
+      if (renderedNodes) {
+        for (const node of renderedNodes) {
           const code = node.textContent || '';
           const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
           const { svg } = await mermaid.render(id, code);
@@ -781,13 +867,18 @@ const renderContent = async () => {
         }
       }
     } else {
+      // Validate Mermaid syntax first to prevent DOM pollution from failed renders
+      await mermaid.parse(codeToRender);
+      
+      if (version !== currentRenderVersion) return;
+
       const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
       const { svg } = await mermaid.render(id, codeToRender);
       
-      // If a newer render has started, discard this one
       if (version !== currentRenderVersion) return;
 
       diagramSvg.value = svg;
+      renderingError.value = null;
       
       await nextTick();
       initializePanZoom();
@@ -1109,7 +1200,7 @@ const activeFileName = computed(() => {
           <!-- Loading Overlay (Scoped to Preview) -->
           <AnimatePresence>
             <Motion
-              v-if="isRendering || isFixing || isRefining"
+              v-if="isFixing || isRefining"
               :initial="{ opacity: 0 }"
               :animate="{ opacity: 1 }"
               :exit="{ opacity: 0 }"
@@ -1117,7 +1208,7 @@ const activeFileName = computed(() => {
             >
               <div class="loader-content">
                 <RotateCw :size="32" class="spinner" />
-                <h3>{{ isFixing ? 'DEBUGGING...' : isRefining ? 'REFINING...' : 'RENDERING...' }}</h3>
+                <h3>{{ isFixing ? 'DEBUGGING...' : 'REFINING...' }}</h3>
               </div>
             </Motion>
           </AnimatePresence>
