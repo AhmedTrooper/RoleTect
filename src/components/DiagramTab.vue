@@ -9,7 +9,8 @@ import {
   readTextFile, 
   mkdir, 
   remove, 
-  exists
+  exists,
+  rename
 } from '@tauri-apps/plugin-fs';
 import { Motion, AnimatePresence } from 'motion-v';
 import { useDialogStore } from '../store/dialog';
@@ -609,6 +610,43 @@ const deleteItem = async (item: FileItem) => {
   }
 };
 
+const renameItem = async (item: FileItem) => {
+  const oldPath = item.path;
+  const oldName = item.name;
+  
+  const newName = await dialog.showPrompt('Enter new name:', oldName, 'Rename');
+  if (!newName || newName === oldName) return;
+
+  const lastSlash = Math.max(oldPath.lastIndexOf('/'), oldPath.lastIndexOf('\\'));
+  const parentDir = lastSlash !== -1 ? oldPath.substring(0, lastSlash) : workspacePath.value;
+  if (!parentDir) return;
+
+  const newPath = await join(parentDir, newName);
+
+  if (await exists(newPath)) {
+    await dialog.showAlert(`A file or folder named "${newName}" already exists.`, 'Rename Failed');
+    return;
+  }
+
+  try {
+    await rename(oldPath, newPath);
+
+    // Sync active and main file paths
+    if (activeFilePath.value === oldPath) {
+      activeFilePath.value = newPath;
+      await invoke('save_diagram_last_opened_file', { path: newPath });
+    } else if (activeFilePath.value && (activeFilePath.value.startsWith(oldPath + '/') || activeFilePath.value.startsWith(oldPath + '\\'))) {
+      const rel = activeFilePath.value.substring(oldPath.length);
+      activeFilePath.value = newPath + rel;
+      await invoke('save_diagram_last_opened_file', { path: newPath + rel });
+    }
+
+    await refreshFileTree();
+  } catch (err: any) {
+    await dialog.showAlert(err.toString(), 'Failed to rename');
+  }
+};
+
 const closeWorkspace = async () => {
   const confirmed = await dialog.showConfirm('Close workspace and return to standalone mode?', 'Close Workspace');
   if (!confirmed) return;
@@ -1011,6 +1049,7 @@ const activeFileName = computed(() => {
                 :on-create-file="createNewFile"
                 :on-create-folder="createNewFolder"
                 :on-delete="deleteItem"
+                :on-rename="renameItem"
               />
             </template>
           </div>

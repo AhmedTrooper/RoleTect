@@ -7,7 +7,8 @@ import {
   FolderPlus, 
   Trash2, 
   Star,
-  FileCode
+  FileCode,
+  Pencil
 } from '@lucide/vue';
 import { Motion, AnimatePresence } from 'motion-v';
 
@@ -30,6 +31,7 @@ defineProps<{
   onCreateFile: (parent: FileItem, ext?: string) => void;
   onCreateFolder: (parent: FileItem) => void;
   onDelete: (item: FileItem) => void;
+  onRename?: (item: FileItem) => void;
 }>();
 </script>
 
@@ -78,6 +80,9 @@ defineProps<{
           <button @click.stop="onCreateFolder(item)" title="New Folder" class="tree-action-btn"><FolderPlus :size="16" /></button>
         </template>
 
+        <!-- Rename Action -->
+        <button v-if="onRename" class="tree-action-btn item-rename" @click.stop="onRename(item)" title="Rename"><Pencil :size="13" /></button>
+
         <!-- Delete Action -->
         <button class="tree-action-btn item-delete" @click.stop="onDelete(item)" title="Delete"><Trash2 :size="16" /></button>
       </div>
@@ -105,6 +110,7 @@ defineProps<{
           :on-create-file="onCreateFile"
           :on-create-folder="onCreateFolder"
           :on-delete="onDelete"
+          :on-rename="onRename"
         />
       </Motion>
     </AnimatePresence>
