@@ -586,6 +586,7 @@ const compilePdf = async () => {
         workspaceDir: workspacePath.value,
         mainFileName: relativePath
       });
+      await refreshFileTree();
     } else {
       // Standalone string compilation
       pdfBytes = await invoke<number[]>('compile_resume_to_pdf', { 
