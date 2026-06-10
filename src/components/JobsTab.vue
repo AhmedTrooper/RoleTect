@@ -300,52 +300,52 @@ const getStatusClass = (status: string) => {
 
       <div class="controls">
         <div 
-          class="filter-group icon-select"
+          class="filter-group"
           @mouseenter="activeTooltip = 'status'"
           @mouseleave="activeTooltip = null"
+          style="position: relative;"
         >
-          <div class="icon-indicator">
-            <Filter :size="16" />
-            <AnimatePresence>
-              <Motion
-                v-if="activeTooltip === 'status'"
-                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
-                :animate="{ opacity: 1, y: 0, scale: 1 }"
-                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
-                :transition="{ duration: 0.15 }"
-                class="floating-message tooltip-top"
-              >
-                Filter Status
-              </Motion>
-            </AnimatePresence>
-          </div>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'status'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-top"
+            >
+              Filter Status
+            </Motion>
+          </AnimatePresence>
           <CustomSelect
             v-model="statusFilter"
             :options="statuses.map(s => ({ value: s, label: s }))"
-            style="min-width: 130px;"
-          />
+            style="min-width: 140px;"
+          >
+            <template #icon>
+              <Filter :size="14" style="color: var(--muted);" />
+            </template>
+          </CustomSelect>
         </div>
 
         <div 
-          class="filter-group icon-select"
+          class="filter-group"
           @mouseenter="activeTooltip = 'sort'"
           @mouseleave="activeTooltip = null"
+          style="position: relative;"
         >
-          <div class="icon-indicator">
-            <ArrowUpDown :size="16" />
-            <AnimatePresence>
-              <Motion
-                v-if="activeTooltip === 'sort'"
-                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
-                :animate="{ opacity: 1, y: 0, scale: 1 }"
-                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
-                :transition="{ duration: 0.15 }"
-                class="floating-message tooltip-top"
-              >
-                Sort Order
-              </Motion>
-            </AnimatePresence>
-          </div>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'sort'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              :transition="{ duration: 0.15 }"
+              class="floating-message tooltip-top"
+            >
+              Sort Order
+            </Motion>
+          </AnimatePresence>
           <CustomSelect
             v-model="sortBy"
             :options="[
@@ -354,8 +354,12 @@ const getStatusClass = (status: string) => {
               { value: 'title', label: 'Job Title' },
               { value: 'company', label: 'Company' }
             ]"
-            style="min-width: 140px;"
-          />
+            style="min-width: 150px;"
+          >
+            <template #icon>
+              <ArrowUpDown :size="14" style="color: var(--muted);" />
+            </template>
+          </CustomSelect>
         </div>
       </div>
     </div>

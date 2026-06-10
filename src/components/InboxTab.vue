@@ -289,58 +289,62 @@ const getStatusClass = (status: string) => {
     <div class="filters-bar" v-if="!isSelectionMode">
       <div class="controls">
         <div 
-          class="filter-group icon-select"
+          class="filter-group"
           @mouseenter="activeTooltip = 'status-filter'"
           @mouseleave="activeTooltip = null"
+          style="position: relative;"
         >
-          <div class="icon-indicator">
-            <Filter :size="16" />
-            <AnimatePresence>
-              <Motion
-                v-if="activeTooltip === 'status-filter'"
-                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
-                :animate="{ opacity: 1, y: 0, scale: 1 }"
-                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
-                class="floating-message tooltip-top"
-              >
-                Filter Status
-              </Motion>
-            </AnimatePresence>
-          </div>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'status-filter'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              class="floating-message tooltip-top"
+            >
+              Filter Status
+            </Motion>
+          </AnimatePresence>
           <CustomSelect
             v-model="statusFilter"
             :options="statuses.map(s => ({ value: s, label: s }))"
-            style="min-width: 130px;"
-          />
+            style="min-width: 140px;"
+          >
+            <template #icon>
+              <Filter :size="14" style="color: var(--muted);" />
+            </template>
+          </CustomSelect>
         </div>
 
         <div 
-          class="filter-group icon-select"
+          class="filter-group"
           @mouseenter="activeTooltip = 'sort-filter'"
           @mouseleave="activeTooltip = null"
+          style="position: relative;"
         >
-          <div class="icon-indicator">
-            <ArrowUpDown :size="16" />
-            <AnimatePresence>
-              <Motion
-                v-if="activeTooltip === 'sort-filter'"
-                :initial="{ opacity: 0, y: 5, scale: 0.9 }"
-                :animate="{ opacity: 1, y: 0, scale: 1 }"
-                :exit="{ opacity: 0, y: 5, scale: 0.9 }"
-                class="floating-message tooltip-top"
-              >
-                Sort Order
-              </Motion>
-            </AnimatePresence>
-          </div>
+          <AnimatePresence>
+            <Motion
+              v-if="activeTooltip === 'sort-filter'"
+              :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+              :animate="{ opacity: 1, y: 0, scale: 1 }"
+              :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+              class="floating-message tooltip-top"
+            >
+              Sort Order
+            </Motion>
+          </AnimatePresence>
           <CustomSelect
             v-model="sortBy"
             :options="[
               { value: 'date-desc', label: 'Newest First' },
               { value: 'date-asc', label: 'Oldest First' }
             ]"
-            style="min-width: 140px;"
-          />
+            style="min-width: 150px;"
+          >
+            <template #icon>
+              <ArrowUpDown :size="14" style="color: var(--muted);" />
+            </template>
+          </CustomSelect>
         </div>
       </div>
 

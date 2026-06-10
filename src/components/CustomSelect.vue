@@ -8,6 +8,10 @@ interface Option {
   label: string;
 }
 
+defineOptions({
+  inheritAttrs: false
+});
+
 const props = defineProps<{
   modelValue: any;
   options: Option[];
@@ -59,7 +63,8 @@ onUnmounted(() => {
     <button
       type="button"
       class="custom-select-trigger"
-      :class="{ open: isOpen, disabled: disabled }"
+      :class="[$attrs.class, { open: isOpen, disabled: disabled }]"
+      :style="$attrs.style"
       @click="toggleDropdown"
       :disabled="disabled"
     >
@@ -99,25 +104,26 @@ onUnmounted(() => {
   width: 100%;
   padding: 8px 12px;
   background: var(--surface-soft, #1e1e24);
-  border: 1px solid var(--border, #32323c);
-  border-radius: 6px;
-  color: var(--text, #f1f1f1);
+  border: 1px solid var(--line, #32323c);
+  border-radius: var(--radius-md, 6px);
+  color: var(--ink, #f1f1f1);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: all 0.2s ease;
   outline: none;
   text-align: left;
 }
 
 .custom-select-trigger:hover:not(:disabled) {
   background: var(--surface, #121214);
-  border-color: var(--accent, #238636);
+  border-color: #484f58;
 }
 
-.custom-select-trigger:focus:not(:disabled) {
-  border-color: var(--accent, #238636);
-  box-shadow: 0 0 0 2px var(--accent-soft, rgba(35, 134, 54, 0.25));
+.custom-select-trigger:focus:not(:disabled),
+.custom-select-trigger.open:not(:disabled) {
+  border-color: #484f58;
+  box-shadow: 0 0 0 2px var(--accent-soft, rgba(35, 134, 54, 0.2));
 }
 
 .custom-select-trigger.disabled {
@@ -136,7 +142,7 @@ onUnmounted(() => {
 
 .custom-select-arrow {
   flex-shrink: 0;
-  color: var(--text-muted, #8b949e);
+  color: var(--muted, #8b949e);
   transition: transform 0.15s ease;
   margin-left: 8px;
 }
@@ -147,31 +153,36 @@ onUnmounted(() => {
 
 .custom-select-options {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   width: 100%;
   max-height: 220px;
   overflow-y: auto;
   background: var(--surface, #121214);
-  border: 1px solid var(--border, #32323c);
-  border-radius: 6px;
+  border: 1px solid var(--line, #32323c);
+  border-radius: var(--radius-md, 6px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  padding: 4px;
+  padding: 6px;
   margin: 0;
   list-style: none;
 }
 
 .custom-select-option {
   padding: 8px 12px;
-  border-radius: 4px;
-  color: var(--text, #f1f1f1);
-  font-size: 14px;
+  margin-bottom: 2px;
+  border-radius: var(--radius-sm, 4px);
+  color: var(--ink, #f1f1f1);
+  font-size: 0.875rem;
   cursor: pointer;
   transition: background 0.1s ease, color 0.1s ease;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.custom-select-option:last-child {
+  margin-bottom: 0;
 }
 
 .custom-select-option:hover {
@@ -183,5 +194,24 @@ onUnmounted(() => {
   background: var(--accent-soft, rgba(35, 134, 54, 0.15));
   color: var(--accent, #238636);
   font-weight: 600;
+}
+
+/* Modifiers applied to trigger button */
+.custom-select-trigger.custom-select {
+  padding: 12px 16px;
+  font-size: 1rem;
+  border-radius: var(--radius-md, 8px);
+}
+
+.custom-select-trigger.compact-select {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--surface);
+}
+
+.custom-select-trigger.status-select {
+  font-weight: 700;
+  color: var(--accent);
 }
 </style>
