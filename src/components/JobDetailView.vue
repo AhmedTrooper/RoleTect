@@ -11,6 +11,7 @@ import { useResumesStore } from '../store/resumes';
 import { useCoverLettersStore } from '../store/cover_letters';
 import { useDialogStore } from '../store/dialog';
 import { useJobsStore, Job } from '../store/jobs';
+import CustomSelect from './CustomSelect.vue';
 
 // Codemirror imports
 import { Codemirror } from 'vue-codemirror';
@@ -658,15 +659,12 @@ const deleteJob = async () => {
                 <Motion v-if="activeTooltip === 'status-meta'" class="flying-message sidebar-tooltip" :initial="{ opacity: 0, x: 5 }" :animate="{ opacity: 1, x: 12 }">Application Status</Motion>
               </AnimatePresence>
             </div>
-            <select 
-              :value="jobDetails?.status" 
-              @change="(e) => updateStatus((e.target as HTMLSelectElement).value)"
-              class="compact-select status-select"
-            >
-              <option v-for="s in ['Drafting', 'Applied', 'Interviewing', 'Offer', 'Rejected', 'Joined']" :key="s" :value="s">
-                {{ s }}
-              </option>
-            </select>
+            <CustomSelect 
+              :model-value="jobDetails?.status" 
+              @change="updateStatus"
+              :options="['Drafting', 'Applied', 'Interviewing', 'Offer', 'Rejected', 'Joined'].map(s => ({ value: s, label: s }))"
+              style="width: 140px;"
+            />
           </div>
 
           <!-- Milestones Section (Context Aware) -->
@@ -757,16 +755,16 @@ const deleteJob = async () => {
           
           <div class="form-group">
             <label>Base Template</label>
-            <select v-if="activeMode === 'resume'" v-model="resumeSelectedId" class="compact-select">
-              <option v-for="resume in standardResumes" :key="resume.id" :value="resume.id">
-                {{ resume.name }}
-              </option>
-            </select>
-            <select v-else v-model="clSelectedId" class="compact-select">
-              <option v-for="cl in standardCls" :key="cl.id" :value="cl.id">
-                {{ cl.name }}
-              </option>
-            </select>
+            <CustomSelect 
+              v-if="activeMode === 'resume'" 
+              v-model="resumeSelectedId" 
+              :options="standardResumes.map(r => ({ value: r.id, label: r.name }))" 
+            />
+            <CustomSelect 
+              v-else 
+              v-model="clSelectedId" 
+              :options="standardCls.map(c => ({ value: c.id, label: c.name }))" 
+            />
           </div>
 
           <div class="form-group">

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useJobsStore, Job } from '../store/jobs';
 import { Motion, AnimatePresence } from 'motion-v';
 import { ask } from '@tauri-apps/plugin-dialog';
+import CustomSelect from './CustomSelect.vue';
 
 import { 
   Search, 
@@ -318,9 +319,11 @@ const getStatusClass = (status: string) => {
               </Motion>
             </AnimatePresence>
           </div>
-          <select v-model="statusFilter">
-            <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
-          </select>
+          <CustomSelect
+            v-model="statusFilter"
+            :options="statuses.map(s => ({ value: s, label: s }))"
+            style="min-width: 130px;"
+          />
         </div>
 
         <div 
@@ -343,12 +346,16 @@ const getStatusClass = (status: string) => {
               </Motion>
             </AnimatePresence>
           </div>
-          <select v-model="sortBy">
-            <option value="date-desc">Newest First</option>
-            <option value="date-asc">Oldest First</option>
-            <option value="title">Job Title</option>
-            <option value="company">Company</option>
-          </select>
+          <CustomSelect
+            v-model="sortBy"
+            :options="[
+              { value: 'date-desc', label: 'Newest First' },
+              { value: 'date-asc', label: 'Oldest First' },
+              { value: 'title', label: 'Job Title' },
+              { value: 'company', label: 'Company' }
+            ]"
+            style="min-width: 140px;"
+          />
         </div>
       </div>
     </div>

@@ -23,6 +23,7 @@ import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useDialogStore } from '../store/dialog';
+import CustomSelect from './CustomSelect.vue';
 
 const store = useSettingsStore();
 const dialog = useDialogStore();
@@ -431,9 +432,9 @@ const sortedThemes = computed(() => {
   return [...store.availableThemes].sort((a, b) => a.name.localeCompare(b.name));
 });
 
-const handleThemeChange = async (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  await store.setTheme(target.value);
+const handleThemeChange = async (val: string | Event) => {
+  const actualVal = typeof val === 'string' ? val : (val.target as HTMLSelectElement).value;
+  await store.setTheme(actualVal);
 };
 
 const handleImportTheme = async () => {
@@ -473,9 +474,9 @@ const showThemeSchema = () => {
   dialog.showAlert(schema, 'Theme Schema');
 };
 
-const handleFontFamilyChange = async (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  await store.setFontFamily(target.value);
+const handleFontFamilyChange = async (val: string | Event) => {
+  const actualVal = typeof val === 'string' ? val : (val.target as HTMLSelectElement).value;
+  await store.setFontFamily(actualVal);
 };
 
 const handleFontSizeChange = async (event: Event) => {
@@ -483,14 +484,14 @@ const handleFontSizeChange = async (event: Event) => {
   await store.setFontSize(parseInt(target.value));
 };
 
-const handleFontWeightChange = async (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  await store.setFontWeight(target.value);
+const handleFontWeightChange = async (val: string | Event) => {
+  const actualVal = typeof val === 'string' ? val : (val.target as HTMLSelectElement).value;
+  await store.setFontWeight(actualVal);
 };
 
-const handleFontStyleChange = async (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  await store.setFontStyle(target.value);
+const handleFontStyleChange = async (val: string | Event) => {
+  const actualVal = typeof val === 'string' ? val : (val.target as HTMLSelectElement).value;
+  await store.setFontStyle(actualVal);
 };
 
 const handleResetTypography = async () => {
@@ -556,13 +557,16 @@ const handleSave = async () => {
         <div class="theme-selector-row">
           <div class="input-group">
             <label>Active Theme</label>
-            <div class="theme-picker-wrapper">
-              <Palette :size="16" class="picker-icon" />
-              <select :value="store.activeThemeId" @change="handleThemeChange" class="custom-select with-icon">
-                <option v-for="theme in sortedThemes" :key="theme.id" :value="theme.id">
-                  {{ theme.name }} {{ theme.is_builtin ? '(Built-in)' : '' }}
-                </option>
-              </select>
+            <div class="theme-picker-wrapper" style="width: 100%;">
+              <CustomSelect 
+                :model-value="store.activeThemeId" 
+                @change="handleThemeChange" 
+                :options="sortedThemes.map(theme => ({ value: theme.id, label: theme.name + (theme.is_builtin ? ' (Built-in)' : '') }))"
+              >
+                <template #icon>
+                  <Palette :size="16" style="color: var(--accent);" />
+                </template>
+              </CustomSelect>
             </div>
           </div>
           
@@ -615,34 +619,40 @@ const handleSave = async () => {
         <div class="typography-row">
           <div class="input-group">
             <label>Font Family</label>
-            <div class="theme-picker-wrapper">
-              <Type :size="16" class="picker-icon" />
-              <select :value="store.fontFamily" @change="handleFontFamilyChange" class="custom-select with-icon">
-                <option v-for="font in fontFamilies" :key="font.id" :value="font.id">
-                  {{ font.name }}
-                </option>
-              </select>
+            <div class="theme-picker-wrapper" style="width: 100%;">
+              <CustomSelect 
+                :model-value="store.fontFamily" 
+                @change="handleFontFamilyChange" 
+                :options="fontFamilies.map(font => ({ value: font.id, label: font.name }))"
+              >
+                <template #icon>
+                  <Type :size="16" style="color: var(--accent);" />
+                </template>
+              </CustomSelect>
             </div>
           </div>
 
           <div class="input-group">
             <label>Font Weight</label>
-            <select :value="store.fontWeight" @change="handleFontWeightChange" class="custom-select">
-              <option v-for="weight in fontWeights" :key="weight.id" :value="weight.id">
-                {{ weight.name }}
-              </option>
-            </select>
+            <CustomSelect 
+              :model-value="store.fontWeight" 
+              @change="handleFontWeightChange" 
+              :options="fontWeights.map(weight => ({ value: weight.id, label: weight.name }))"
+            />
           </div>
 
           <div class="input-group">
             <label>Font Style</label>
-            <div class="theme-picker-wrapper">
-              <Italic :size="16" class="picker-icon" />
-              <select :value="store.fontStyle" @change="handleFontStyleChange" class="custom-select with-icon">
-                <option v-for="style in fontStyles" :key="style.id" :value="style.id">
-                  {{ style.name }}
-                </option>
-              </select>
+            <div class="theme-picker-wrapper" style="width: 100%;">
+              <CustomSelect 
+                :model-value="store.fontStyle" 
+                @change="handleFontStyleChange" 
+                :options="fontStyles.map(style => ({ value: style.id, label: style.name }))"
+              >
+                <template #icon>
+                  <Italic :size="16" style="color: var(--accent);" />
+                </template>
+              </CustomSelect>
             </div>
           </div>
 
@@ -688,9 +698,10 @@ const handleSave = async () => {
                 </AnimatePresence>
               </div>
             </div>
-            <select v-model="providerInput" class="custom-select">
-              <option v-for="p in providers" :key="p.id" :value="p.id">{{ p.name }}</option>
-            </select>
+            <CustomSelect 
+              v-model="providerInput" 
+              :options="providers.map(p => ({ value: p.id, label: p.name }))" 
+            />
           </div>
 
           <div class="input-group">
@@ -712,9 +723,10 @@ const handleSave = async () => {
                 </AnimatePresence>
               </div>
             </div>
-            <select v-model="modelInput" class="custom-select">
-              <option v-for="m in currentModels" :key="m.id" :value="m.id">{{ m.name }}</option>
-            </select>
+            <CustomSelect 
+              v-model="modelInput" 
+              :options="currentModels.map(m => ({ value: m.id, label: m.name }))" 
+            />
           </div>
         </div>
       </div>

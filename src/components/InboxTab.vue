@@ -25,6 +25,7 @@ import {
   ArrowUpDown
 } from '@lucide/vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import CustomSelect from './CustomSelect.vue';
 
 const inboxStore = useInboxStore();
 const settingsStore = useSettingsStore();
@@ -306,9 +307,11 @@ const getStatusClass = (status: string) => {
               </Motion>
             </AnimatePresence>
           </div>
-          <select v-model="statusFilter">
-            <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
-          </select>
+          <CustomSelect
+            v-model="statusFilter"
+            :options="statuses.map(s => ({ value: s, label: s }))"
+            style="min-width: 130px;"
+          />
         </div>
 
         <div 
@@ -330,10 +333,14 @@ const getStatusClass = (status: string) => {
               </Motion>
             </AnimatePresence>
           </div>
-          <select v-model="sortBy">
-            <option value="date-desc">Newest First</option>
-            <option value="date-asc">Oldest First</option>
-          </select>
+          <CustomSelect
+            v-model="sortBy"
+            :options="[
+              { value: 'date-desc', label: 'Newest First' },
+              { value: 'date-asc', label: 'Oldest First' }
+            ]"
+            style="min-width: 140px;"
+          />
         </div>
       </div>
 
