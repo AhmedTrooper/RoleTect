@@ -404,6 +404,11 @@ const createNewFile = async (parent: FileItem | null = null) => {
   }
 
   const fullPath = await join(dir, fileName);
+
+  if (await exists(fullPath)) {
+    await dialog.showAlert(`A file or folder named "${fileName}" already exists.`, 'Create Failed');
+    return;
+  }
   
   // Prevent fatal format file error by providing a minimal valid TeX document
   const isTex = fileName.endsWith('.tex');
@@ -433,6 +438,12 @@ const createNewFolder = async (parent: FileItem | null = null) => {
   if (!folderName) return;
 
   const fullPath = await join(dir, folderName);
+
+  if (await exists(fullPath)) {
+    await dialog.showAlert(`A file or folder named "${folderName}" already exists.`, 'Create Failed');
+    return;
+  }
+
   try {
     await mkdir(fullPath);
     // Always refresh the full tree

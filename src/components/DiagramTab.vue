@@ -537,6 +537,11 @@ const createNewFile = async (parent: FileItem | null = null, ext = '.mmd') => {
   const hasExtension = fileName.toLowerCase().endsWith('.mmd') || fileName.toLowerCase().endsWith('.md');
   const finalName = hasExtension ? fileName : `${fileName}${ext}`;
   const fullPath = await join(dir, finalName);
+
+  if (await exists(fullPath)) {
+    await dialog.showAlert(`A file or folder named "${finalName}" already exists.`, 'Create Failed');
+    return;
+  }
   
   // Determine initial content based on the FINAL extension
   const isMd = finalName.toLowerCase().endsWith('.md');
@@ -563,6 +568,12 @@ const createNewFolder = async (parent: FileItem | null = null) => {
   if (!folderName) return;
 
   const fullPath = await join(dir, folderName);
+
+  if (await exists(fullPath)) {
+    await dialog.showAlert(`A file or folder named "${folderName}" already exists.`, 'Create Failed');
+    return;
+  }
+
   try {
     await mkdir(fullPath);
     // Always refresh the full tree

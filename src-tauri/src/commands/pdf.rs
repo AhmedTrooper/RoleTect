@@ -106,11 +106,16 @@ pub async fn compile_resume_to_pdf(latex_code: String) -> Result<Vec<u8>, String
                     .default_bundle(false)
                     .map_err(|e| format!("Failed to load Tectonic bundle: {}", e))?;
 
+                let format_cache_path = config_loader
+                    .format_cache_path()
+                    .map_err(|e| format!("Failed to get format cache path: {}", e))?;
+
                 let mut sb = tectonic::driver::ProcessingSessionBuilder::default();
                 sb.bundle(bundle)
                     .primary_input_buffer(latex_code.as_bytes())
                     .tex_input_name("texput")
                     .filesystem_root(std::env::temp_dir()) // Use temp dir for intermediate files
+                    .format_cache_path(format_cache_path)
                     .format_name("latex")
                     .output_format(tectonic::driver::OutputFormat::Pdf)
                     .build_date(std::time::SystemTime::now());
@@ -160,18 +165,16 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                     .default_bundle(false)
                     .map_err(|e| format!("Failed to load Tectonic bundle: {}", e))?;
 
+                let format_cache_path = config_loader
+                    .format_cache_path()
+                    .map_err(|e| format!("Failed to get format cache path: {}", e))?;
+
                 // Determine the absolute path to the main file
                 let main_file_path = workspace_path.join(&main_file_name);
                 if !main_file_path.is_file() {
                     return Err(format!("Main TeX file '{}' not found in workspace.", main_file_name));
                 }
 
-                // Use file_stem for the logical input name (job name) to avoid .tex extension issues
-                let logical_input_name = PathBuf::from(&main_file_name)
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .map(|s| s.to_string())
-                    .ok_or_else(|| "Invalid main file name".to_string())?;
 
                 let mut sb = tectonic::driver::ProcessingSessionBuilder::default();
                 let temp_output_dir = std::env::temp_dir().join(format!("roletect-{}", nanoid::nanoid!()));
@@ -182,6 +185,7 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                     .tex_input_name("texput.tex")
                     .filesystem_root(&workspace_path)
                     .output_dir(&temp_output_dir) // Use temp dir for ALL outputs
+                    .format_cache_path(format_cache_path)
                     .format_name("latex")
                     .output_format(tectonic::driver::OutputFormat::Pdf);
 
@@ -197,8 +201,8 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                 if temp_pdf_path.exists() {
                     let pdf_data = std::fs::read(&temp_pdf_path).map_err(|e| format!("Failed to read generated PDF: {}", e))?;
                     
-                    // Also copy it to the workspace root for the user, naming it after the original file
-                    let mut final_pdf_path = workspace_path.join(&logical_input_name);
+                    // Copy it to the same directory as the compiling source file
+                    let mut final_pdf_path = workspace_path.join(&main_file_name);
                     final_pdf_path.set_extension("pdf");
                     let _ = std::fs::write(&final_pdf_path, &pdf_data);
 
