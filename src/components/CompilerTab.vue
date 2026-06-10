@@ -569,7 +569,15 @@ const compilePdf = async () => {
       // 1. If active file is a .tex file, compile it.
       // 2. Otherwise, fallback to the designated Main File.
       let compileTarget = activeFilePath.value;
-      if (!compileTarget || !compileTarget.toLowerCase().endsWith('.tex')) {
+      if (compileTarget && !compileTarget.toLowerCase().endsWith('.tex')) {
+        await dialog.showAlert(
+          `The active file "${compileTarget.split(/[/\\\\]/).pop()}" is not a LaTeX (.tex) file. Only .tex files can be compiled.`,
+          'Compilation Blocked'
+        );
+        return;
+      }
+
+      if (!compileTarget) {
         compileTarget = mainFilePath.value;
       }
       
