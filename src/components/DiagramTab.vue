@@ -45,7 +45,9 @@ import {
   ArrowLeftRight,
   Copy,
   Check,
-  Download
+  Download,
+  ImageDown,
+  Maximize2
 } from '@lucide/vue';
 
 import { Codemirror } from 'vue-codemirror';
@@ -142,6 +144,78 @@ const isFixing = ref(false);
 const isExporting = ref(false);
 const refinementInstruction = ref('');
 
+// Export Resolution State
+const isExportModalVisible = ref(false);
+const selectedExportPreset = ref('2x');
+const customExportWidth = ref(3840);
+const exportProgress = ref('');
+
+interface ExportPreset {
+  id: string;
+  label: string;
+  sublabel: string;
+  targetWidth: number | null; // null = use scale, number = target width in px
+  scale: number | null;       // used when targetWidth is null
+  badge?: string;
+}
+
+const exportPresets: ExportPreset[] = [
+  { id: '1x', label: 'Original', sublabel: 'Native SVG size', targetWidth: null, scale: 1 },
+  { id: '2x', label: '2× Retina', sublabel: 'Good for screens', targetWidth: null, scale: 2, badge: 'Default' },
+  { id: '4k', label: '4K UHD', sublabel: '3840px wide', targetWidth: 3840, scale: null },
+  { id: '8k', label: '8K UHD', sublabel: '7680px wide', targetWidth: 7680, scale: null },
+  { id: '16k', label: '16K', sublabel: '15360px wide', targetWidth: 15360, scale: null, badge: 'Ultra' },
+  { id: '32k', label: '32K', sublabel: '30720px wide', targetWidth: 30720, scale: null, badge: 'Max' },
+  { id: 'custom', label: 'Custom', sublabel: 'Set your own width', targetWidth: null, scale: null },
+];
+
+const selectedPresetObj = computed(() => exportPresets.find(p => p.id === selectedExportPreset.value)!);
+
+const estimatedExportDimensions = computed(() => {
+  const svgElement = previewContainer.value?.querySelector('svg');
+  if (!svgElement) return { width: 0, height: 0, megapixels: '0' };
+  
+  const bbox = svgElement.getBBox();
+  const padding = 20;
+  const baseWidth = bbox.width + padding * 2;
+  const baseHeight = bbox.height + padding * 2;
+  
+  const preset = selectedPresetObj.value;
+  let finalWidth: number;
+  let finalHeight: number;
+  
+  if (preset.id === 'custom') {
+    const s = customExportWidth.value / baseWidth;
+    finalWidth = customExportWidth.value;
+    finalHeight = Math.round(baseHeight * s);
+  } else if (preset.scale !== null) {
+    finalWidth = Math.round(baseWidth * preset.scale);
+    finalHeight = Math.round(baseHeight * preset.scale);
+  } else if (preset.targetWidth !== null) {
+    const s = preset.targetWidth / baseWidth;
+    finalWidth = preset.targetWidth;
+    finalHeight = Math.round(baseHeight * s);
+  } else {
+    finalWidth = Math.round(baseWidth);
+    finalHeight = Math.round(baseHeight);
+  }
+  
+  const mp = (finalWidth * finalHeight) / 1_000_000;
+  return { width: finalWidth, height: finalHeight, megapixels: mp.toFixed(1) };
+});
+
+const isExportDangerous = computed(() => {
+  const { width, height } = estimatedExportDimensions.value;
+  // Most browsers cap canvas at 16384×16384
+  return width > 16384 || height > 16384;
+});
+
+const openExportModal = () => {
+  if (isMarkdown.value || !diagramSvg.value) return;
+  isExportModalVisible.value = true;
+  exportProgress.value = '';
+};
+
 const downloadAsSvg = async () => {
   if (isMarkdown.value || !diagramSvg.value) return;
   
@@ -175,22 +249,42 @@ const downloadAsPng = async () => {
 
   isExporting.value = true;
   renderingError.value = null;
+  exportProgress.value = 'Preparing SVG...';
 
   try {
     const svgElement = previewContainer.value?.querySelector('svg');
     if (!svgElement) throw new Error("Rendered diagram not found.");
 
-    // 1. Get dimensions
+    // 1. Get base dimensions from SVG bounding box
     const bbox = svgElement.getBBox();
     const padding = 20;
-    const width = bbox.width + padding * 2;
-    const height = bbox.height + padding * 2;
+    const baseWidth = bbox.width + padding * 2;
+    const baseHeight = bbox.height + padding * 2;
     
-    // 2. Clone and prepare SVG string
+    // 2. Compute scale from the selected preset
+    let scale: number;
+    const preset = selectedPresetObj.value;
+    
+    if (preset.id === 'custom') {
+      scale = customExportWidth.value / baseWidth;
+    } else if (preset.scale !== null) {
+      scale = preset.scale;
+    } else if (preset.targetWidth !== null) {
+      scale = preset.targetWidth / baseWidth;
+    } else {
+      scale = 2; // fallback
+    }
+    
+    const canvasWidth = Math.round(baseWidth * scale);
+    const canvasHeight = Math.round(baseHeight * scale);
+    
+    exportProgress.value = `Rendering ${canvasWidth} × ${canvasHeight} (${(canvasWidth * canvasHeight / 1_000_000).toFixed(1)} MP)...`;
+    
+    // 3. Clone and prepare SVG string
     const clonedSvg = svgElement.cloneNode(true) as SVGElement;
-    clonedSvg.setAttribute('width', width.toString());
-    clonedSvg.setAttribute('height', height.toString());
-    clonedSvg.setAttribute('viewBox', `${bbox.x - padding} ${bbox.y - padding} ${width} ${height}`);
+    clonedSvg.setAttribute('width', baseWidth.toString());
+    clonedSvg.setAttribute('height', baseHeight.toString());
+    clonedSvg.setAttribute('viewBox', `${bbox.x - padding} ${bbox.y - padding} ${baseWidth} ${baseHeight}`);
 
     // Embed basic styles
     const style = document.createElement('style');
@@ -202,33 +296,45 @@ const downloadAsPng = async () => {
 
     const serializedSvg = new XMLSerializer().serializeToString(clonedSvg);
     
-    // 3. Convert to Data URL (Bypasses many blob security issues)
+    // 4. Convert to Data URL (Bypasses many blob security issues)
     const encodedData = window.btoa(unescape(encodeURIComponent(serializedSvg)));
     const dataUrl = `data:image/svg+xml;base64,${encodedData}`;
 
-    // 4. Render to Canvas
-    const scale = 2; 
+    // 5. Check canvas size limits (most browsers cap at ~16384, some allow ~32768)
+    const CANVAS_HARD_LIMIT = 32768;
+    if (canvasWidth > CANVAS_HARD_LIMIT || canvasHeight > CANVAS_HARD_LIMIT) {
+      throw new Error(
+        `Requested resolution (${canvasWidth}×${canvasHeight}) exceeds the browser's maximum canvas dimension of ${CANVAS_HARD_LIMIT}px. ` +
+        `Try a lower resolution or export as SVG (which is infinitely scalable).`
+      );
+    }
+
+    // 6. Render to Canvas
     const canvas = document.createElement('canvas');
-    canvas.width = width * scale;
-    canvas.height = height * scale;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error("Canvas context initialization failed.");
 
     const img = new Image();
     img.onload = async () => {
       try {
+        exportProgress.value = 'Drawing to canvas...';
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#0d1117';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
+        exportProgress.value = 'Encoding PNG...';
         const pngUrl = canvas.toDataURL('image/png');
         const base64Data = pngUrl.split(',')[1];
         const bytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
 
+        const presetLabel = preset.id === 'custom' ? `${canvasWidth}px` : preset.label;
         const fileName = activeFilePath.value 
-          ? activeFilePath.value.split(/[/\\]/).pop()?.replace(/\.[^/.]+$/, "") + ".png"
-          : "diagram.png";
+          ? activeFilePath.value.split(/[/\\]/).pop()?.replace(/\.[^/.]+$/, "") + `_${presetLabel.replace(/\s+/g, '_')}.png`
+          : `diagram_${presetLabel.replace(/\s+/g, '_')}.png`;
 
+        exportProgress.value = 'Saving file...';
         const filePath = await save({
           defaultPath: fileName,
           filters: [{ name: 'PNG Image', extensions: ['png'] }]
@@ -236,18 +342,25 @@ const downloadAsPng = async () => {
 
         if (filePath) {
           await writeFile(filePath, bytes);
-          await dialog.showAlert("Diagram exported successfully.", "Export Complete");
+          await dialog.showAlert(
+            `Exported at ${canvasWidth} × ${canvasHeight} (${(canvasWidth * canvasHeight / 1_000_000).toFixed(1)} MP)`,
+            "Export Complete"
+          );
         }
       } catch (err: any) {
         console.error("PNG Conversion Error:", err);
         renderingError.value = `PNG EXPORT ERROR: ${err.message || err.toString()}\n\nTip: If PNG export is blocked, try using 'Export as SVG' instead.`;
       } finally {
         isExporting.value = false;
+        isExportModalVisible.value = false;
+        exportProgress.value = '';
       }
     };
     
     img.onerror = () => {
       isExporting.value = false;
+      isExportModalVisible.value = false;
+      exportProgress.value = '';
       renderingError.value = "PNG EXPORT FAILED: The browser security policy blocked the conversion. This usually happens if the diagram uses features (like HTML labels) that 'taint' the drawing surface. Use 'Export as SVG' for a guaranteed save.";
     };
     
@@ -256,6 +369,8 @@ const downloadAsPng = async () => {
   } catch (err: any) {
     renderingError.value = `EXPORT INITIATION FAILED: ${err.toString()}`;
     isExporting.value = false;
+    isExportModalVisible.value = false;
+    exportProgress.value = '';
   }
 };
 
@@ -1237,10 +1352,10 @@ const activeFileName = computed(() => {
                 </AnimatePresence>
               </div>
 
-              <!-- Export as PNG (Canvas based) -->
+              <!-- Export as PNG (Resolution picker) -->
               <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'export-png'" @mouseleave="activeTooltip = null">
-                <button class="action-btn-inline" @click="downloadAsPng" :disabled="isExporting">
-                  <Download v-if="!isExporting" :size="14" />
+                <button class="action-btn-inline" @click="openExportModal" :disabled="isExporting">
+                  <ImageDown v-if="!isExporting" :size="14" />
                   <RotateCw v-else :size="14" class="spinner" />
                 </button>
                 <AnimatePresence>
@@ -1330,6 +1445,98 @@ const activeFileName = computed(() => {
               <h4>{{ temp.name }}</h4>
               <p>{{ temp.description }}</p>
             </div>
+          </div>
+        </Motion>
+      </Motion>
+    </AnimatePresence>
+
+    <!-- Export Resolution Modal -->
+    <AnimatePresence>
+      <Motion
+        v-if="isExportModalVisible"
+        :initial="{ opacity: 0 }"
+        :animate="{ opacity: 1 }"
+        :exit="{ opacity: 0 }"
+        class="modal-backdrop"
+        @click="!isExporting && (isExportModalVisible = false)"
+      >
+        <Motion
+          :initial="{ scale: 0.92, opacity: 0, y: 20 }"
+          :animate="{ scale: 1, opacity: 1, y: 0 }"
+          :exit="{ scale: 0.92, opacity: 0, y: 20 }"
+          :transition="{ duration: 0.2 }"
+          class="export-modal"
+          @click.stop
+        >
+          <div class="export-modal-header">
+            <div class="export-modal-title">
+              <Maximize2 :size="18" />
+              <h3>Export Resolution</h3>
+            </div>
+            <button @click="!isExporting && (isExportModalVisible = false)" :disabled="isExporting">
+              <X :size="18" />
+            </button>
+          </div>
+
+          <div class="export-presets-grid">
+            <button
+              v-for="preset in exportPresets"
+              :key="preset.id"
+              class="export-preset-card"
+              :class="{ active: selectedExportPreset === preset.id, dangerous: preset.id === selectedExportPreset && isExportDangerous }"
+              @click="selectedExportPreset = preset.id"
+              :disabled="isExporting"
+            >
+              <span v-if="preset.badge" class="preset-badge" :class="{ 'badge-ultra': preset.badge === 'Ultra' || preset.badge === 'Max' }">{{ preset.badge }}</span>
+              <span class="preset-label">{{ preset.label }}</span>
+              <span class="preset-sublabel">{{ preset.sublabel }}</span>
+            </button>
+          </div>
+
+          <!-- Custom width input -->
+          <div v-if="selectedExportPreset === 'custom'" class="custom-width-row">
+            <label>Target Width (px)</label>
+            <input
+              type="number"
+              v-model.number="customExportWidth"
+              min="100"
+              max="65536"
+              step="100"
+              :disabled="isExporting"
+            />
+          </div>
+
+          <!-- Dimension preview -->
+          <div class="export-dimension-preview">
+            <div class="dim-item">
+              <span class="dim-label">Output</span>
+              <span class="dim-value">{{ estimatedExportDimensions.width.toLocaleString() }} × {{ estimatedExportDimensions.height.toLocaleString() }}</span>
+            </div>
+            <div class="dim-item">
+              <span class="dim-label">Megapixels</span>
+              <span class="dim-value">{{ estimatedExportDimensions.megapixels }} MP</span>
+            </div>
+          </div>
+
+          <!-- Warning for ultra-high-res -->
+          <div v-if="isExportDangerous" class="export-warning">
+            <span>⚠</span>
+            <p>This resolution exceeds typical browser canvas limits (16384px). Export may fail or produce a blank image on some systems. Consider using <strong>SVG export</strong> for lossless, infinitely scalable output.</p>
+          </div>
+
+          <!-- Progress -->
+          <div v-if="exportProgress" class="export-progress">
+            <RotateCw :size="14" class="spinner" />
+            <span>{{ exportProgress }}</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="export-modal-actions">
+            <button class="export-cancel-btn" @click="isExportModalVisible = false" :disabled="isExporting">Cancel</button>
+            <button class="export-confirm-btn" @click="downloadAsPng" :disabled="isExporting">
+              <Download :size="16" />
+              <span>{{ isExporting ? 'Exporting...' : 'Export PNG' }}</span>
+            </button>
           </div>
         </Motion>
       </Motion>
@@ -2127,9 +2334,291 @@ const activeFileName = computed(() => {
 .template-card h4 { margin: 0 0 8px; font-size: 1rem; }
 .template-card p { margin: 0; font-size: 0.75rem; color: var(--muted); }
 
+/* ===== Export Resolution Modal ===== */
+.export-modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  width: 92%;
+  max-width: 520px;
+  padding: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.export-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.export-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+}
+
+.export-modal-title h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.export-modal-header > button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: 0.15s;
+}
+
+.export-modal-header > button:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.export-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.export-preset-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 4px;
+}
+
+.export-preset-card:hover:not(:disabled) {
+  border-color: var(--muted);
+  background: var(--surface);
+  transform: translateY(-1px);
+}
+
+.export-preset-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(88, 166, 255, 0.15);
+}
+
+.export-preset-card.dangerous {
+  border-color: var(--warning);
+  box-shadow: 0 0 0 1px var(--warning), 0 4px 16px rgba(255, 166, 87, 0.15);
+}
+
+.preset-badge {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  line-height: 1.2;
+}
+
+.preset-badge.badge-ultra {
+  background: linear-gradient(135deg, #a371f7, #f778ba);
+}
+
+.preset-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.preset-sublabel {
+  font-size: 0.6rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.custom-width-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.custom-width-row label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.custom-width-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.custom-width-row input:focus {
+  border-color: var(--accent);
+}
+
+.export-dimension-preview {
+  display: flex;
+  gap: 16px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.dim-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dim-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dim-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.export-warning {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 166, 87, 0.08);
+  border: 1px solid rgba(255, 166, 87, 0.25);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.export-warning span {
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.export-warning p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.export-warning strong {
+  color: var(--ink);
+}
+
+.export-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.export-progress span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.export-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.export-cancel-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.export-cancel-btn:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.export-confirm-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-confirm-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
+}
+
+.export-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 1024px) {
   .workspace-sidebar {
     width: 200px;
+  }
+  
+  .export-presets-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -2153,6 +2642,10 @@ const activeFileName = computed(() => {
   
   .preview-section {
     flex: 1.2;
+  }
+  
+  .export-presets-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>
