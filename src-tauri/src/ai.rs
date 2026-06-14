@@ -89,13 +89,16 @@ Output the results in the requested structured format.";
                 .map_err(|e| format!("Gemini AI Parsing Error: {}", e))?
         }
         "openai" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
                 Some(url) if !url.trim().is_empty() => {
                     openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
                 }
                 _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
             };
-            let extractor = client.extractor::<JobDetails>(model).preamble(system_prompt).build();
+            let mut builder = client.extractor::<JobDetails>(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let extractor = builder.build();
             extractor
                 .extract(&user_prompt)
                 .await
@@ -110,8 +113,16 @@ Output the results in the requested structured format.";
                 .map_err(|e| format!("Groq Parsing Error: {}", e))?
         }
         "anthropic" => {
-            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
-            let extractor = client.extractor::<JobDetails>(model).preamble(system_prompt).build();
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.extractor::<JobDetails>(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let extractor = builder.build();
             extractor
                 .extract(&user_prompt)
                 .await
@@ -189,13 +200,16 @@ Please tailor the resume to match the job description. Return only the modified 
                 .map_err(|e| format!("Gemini AI Tailoring Error: {}", e))
         }
         "openai" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
                 Some(url) if !url.trim().is_empty() => {
                     openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
                 }
                 _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
             };
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -210,8 +224,16 @@ Please tailor the resume to match the job description. Return only the modified 
                 .map_err(|e| format!("Groq Tailoring Error: {}", e))
         }
         "anthropic" => {
-            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -281,13 +303,16 @@ Please tailor the cover letter to match the job description. Return only the mod
                 .map_err(|e| format!("Gemini AI Tailoring Error: {}", e))
         }
         "openai" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
                 Some(url) if !url.trim().is_empty() => {
                     openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
                 }
                 _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
             };
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -302,8 +327,16 @@ Please tailor the cover letter to match the job description. Return only the mod
                 .map_err(|e| format!("Groq Tailoring Error: {}", e))
         }
         "anthropic" => {
-            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -362,13 +395,16 @@ Please apply the requested changes. Return only the updated LaTeX code."#,
                 .map_err(|e| format!("Gemini AI Refinement Error: {}", e))
         }
         "openai" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
                 Some(url) if !url.trim().is_empty() => {
                     openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
                 }
                 _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
             };
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -383,8 +419,16 @@ Please apply the requested changes. Return only the updated LaTeX code."#,
                 .map_err(|e| format!("Groq Refinement Error: {}", e))
         }
         "anthropic" => {
-            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -443,13 +487,16 @@ Please fix the LaTeX code so it compiles successfully. Return only the fixed LaT
                 .map_err(|e| format!("Gemini AI Fix Error: {}", e))
         }
         "openai" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
                 Some(url) if !url.trim().is_empty() => {
                     openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
                 }
                 _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
             };
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -464,8 +511,16 @@ Please fix the LaTeX code so it compiles successfully. Return only the fixed LaT
                 .map_err(|e| format!("Groq Fix Error: {}", e))
         }
         "anthropic" => {
-            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
-            let agent = client.agent(model).preamble(system_prompt).build();
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -528,13 +583,16 @@ Please apply the requested changes. Return only the updated code."#,
                 .map_err(|e| format!("Gemini AI Refinement Error: {}", e))
         }
         "openai" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
                 Some(url) if !url.trim().is_empty() => {
                     openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
                 }
                 _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
             };
-            let agent = client.agent(model).preamble(&system_prompt).build();
+            let mut builder = client.agent(model).preamble(&system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -549,8 +607,16 @@ Please apply the requested changes. Return only the updated code."#,
                 .map_err(|e| format!("Groq Refinement Error: {}", e))
         }
         "anthropic" => {
-            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
-            let agent = client.agent(model).preamble(&system_prompt).build();
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(&system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -613,13 +679,16 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
                 .map_err(|e| format!("Gemini AI Fix Error: {}", e))
         }
         "openai" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
                 Some(url) if !url.trim().is_empty() => {
                     openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
                 }
                 _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
             };
-            let agent = client.agent(model).preamble(&system_prompt).build();
+            let mut builder = client.agent(model).preamble(&system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
@@ -634,8 +703,16 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
                 .map_err(|e| format!("Groq Fix Error: {}", e))
         }
         "anthropic" => {
-            let client = anthropic::Client::new(api_key).map_err(|e| e.to_string())?;
-            let agent = client.agent(model).preamble(&system_prompt).build();
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(&system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
             agent
                 .prompt(&user_prompt)
                 .await
