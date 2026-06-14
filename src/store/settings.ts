@@ -250,9 +250,12 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   };
 
-  const saveModelConfig = async (provider: string, model: string) => {
+  const saveModelConfig = async (provider: string, model: string, customBaseUrlVal?: string, customModelVal?: string) => {
     try {
       await invoke('save_model_pref', { provider, model });
+      await invoke('save_setting', { key: `${provider}_custom_base_url`, value: customBaseUrlVal || '' });
+      await invoke('save_setting', { key: `${provider}_custom_model`, value: customModelVal || '' });
+      
       const config: { provider: string, model: string } = await invoke('get_model_pref');
       selectedAiProvider.value = config.provider;
       selectedAiModel.value = config.model;

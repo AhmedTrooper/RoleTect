@@ -52,13 +52,15 @@ pub struct JobPayload {
 
 #[tauri::command]
 pub async fn parse_job(
+    state: State<'_, AppState>,
     provider: String,
     model: String,
     api_key: String,
     raw_jd: String,
     job_url: Option<String>,
 ) -> Result<ai::JobParseResult, String> {
-    ai::parse_job_description(&provider, &model, &api_key, &raw_jd, job_url.as_deref()).await
+    let custom_base_url = crate::commands::settings::get_custom_base_url(&state, &provider).await;
+    ai::parse_job_description(&provider, &model, &api_key, custom_base_url.as_deref(), &raw_jd, job_url.as_deref()).await
 }
 
 #[tauri::command]
@@ -498,10 +500,12 @@ pub async fn tailor_resume(
     );
 
     // 3. Call AI
+    let custom_base_url = crate::commands::settings::get_custom_base_url(&state, &provider).await;
     let tailored_latex = ai::tailor_latex_for_job(
         &provider,
         &model,
         &api_key,
+        custom_base_url.as_deref(),
         &base_latex,
         &job_context,
         custom_instruction.as_deref(),

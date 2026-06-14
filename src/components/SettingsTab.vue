@@ -86,6 +86,10 @@ const copyDemoTheme = async () => {
 const providerInput = ref('');
 const modelInput = ref('');
 const apiKeyInput = ref('');
+const customBaseUrlInput = ref('');
+const customModelInput = ref('');
+const savedCustomBaseUrl = ref('');
+const savedCustomModel = ref('');
 
 // UI feedback states
 const isSaving = ref(false);
@@ -394,7 +398,9 @@ const hasChanges = computed(() => {
   return (
     providerInput.value !== store.selectedAiProvider ||
     modelInput.value !== store.selectedAiModel ||
-    apiKeyInput.value.length > 0
+    apiKeyInput.value.length > 0 ||
+    customBaseUrlInput.value !== savedCustomBaseUrl.value ||
+    customModelInput.value !== savedCustomModel.value
   );
 });
 
@@ -412,6 +418,15 @@ const syncFromStore = async () => {
   providerInput.value = store.selectedAiProvider;
   modelInput.value = store.selectedAiModel;
   apiKeyInput.value = ''; // Reset the input buffer
+
+  const url = await invoke('get_setting', { key: `${providerInput.value}_custom_base_url`, default_value: '' }) as string;
+  const customModel = await invoke('get_setting', { key: `${providerInput.value}_custom_model`, default_value: '' }) as string;
+  
+  customBaseUrlInput.value = url;
+  customModelInput.value = customModel;
+  savedCustomBaseUrl.value = url;
+  savedCustomModel.value = customModel;
+
   await store.loadProviderKeyStatus(providerInput.value);
 };
 
@@ -421,9 +436,21 @@ onMounted(syncFromStore);
 watch(providerInput, async (newProvider) => {
   if (!newProvider) return;
   const availableModels = modelsByProvider[newProvider];
-  if (!availableModels.find(m => m.id === modelInput.value)) {
+
+  const url = await invoke('get_setting', { key: `${newProvider}_custom_base_url`, default_value: '' }) as string;
+  const customModel = await invoke('get_setting', { key: `${newProvider}_custom_model`, default_value: '' }) as string;
+  
+  customBaseUrlInput.value = url;
+  customModelInput.value = customModel;
+  savedCustomBaseUrl.value = url;
+  savedCustomModel.value = customModel;
+
+  if (customModel) {
+    modelInput.value = customModel;
+  } else if (!availableModels.find(m => m.id === modelInput.value)) {
     modelInput.value = availableModels[0].id;
   }
+  
   // Check if THIS specific provider has a key saved in Stronghold
   await store.loadProviderKeyStatus(newProvider);
 });
@@ -511,8 +538,14 @@ const handleSave = async () => {
       await store.saveApiKey(providerInput.value, apiKeyInput.value.trim());
     }
     
-    // 2. Save the provider/model choice
-    await store.saveModelConfig(providerInput.value, modelInput.value);
+    // 2. Save the provider/model choice, utilizing custom model if specified
+    const finalModel = customModelInput.value.trim() !== '' ? customModelInput.value.trim() : modelInput.value;
+    await store.saveModelConfig(
+      providerInput.value, 
+      finalModel, 
+      customBaseUrlInput.value.trim(), 
+      customModelInput.value.trim()
+    );
     
     // 3. Re-sync everything and show success
     await syncFromStore();
@@ -729,6 +762,37 @@ const handleSave = async () => {
             />
           </div>
         </div>
+
+        <!-- Custom Overrides -->
+        <div class="input-row" style="margin-top: 16px;">
+          <div class="input-group">
+            <label>Custom Endpoint URL (Optional)</label>
+            <input 
+              v-model="customBaseUrlInput" 
+              type="text" 
+              placeholder="e.g. https://api.deepseek.com/v1"
+              spellcheck="false"
+              class="form-input"
+            />
+            <span class="setup-tip" style="font-size: 0.8rem; color: var(--muted); margin-top: 4px; display: block; line-height: 1.4;">
+              Override the API base URL for this provider (ideal for local or custom OpenAI-compatible endpoints).
+            </span>
+          </div>
+
+          <div class="input-group">
+            <label>Custom Model Name (Optional)</label>
+            <input 
+              v-model="customModelInput" 
+              type="text" 
+              placeholder="e.g. deepseek-chat"
+              spellcheck="false"
+              class="form-input"
+            />
+            <span class="setup-tip" style="font-size: 0.8rem; color: var(--muted); margin-top: 4px; display: block; line-height: 1.4;">
+              Type a custom model string to override the dropdown selection above.
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- API Credentials -->
@@ -803,7 +867,7 @@ const handleSave = async () => {
                 <button 
                   class="btn-action primary" 
                   @click="handleSave" 
-                  :disabled="isSaving || (providerInput === store.selectedAiProvider && modelInput === store.selectedAiModel && !apiKeyInput)"
+                  :disabled="isSaving || !hasChanges"
                 >
                   <Save v-if="!isSaving" :size="16" />
                   <RotateCcw v-else :size="16" class="spinner" />

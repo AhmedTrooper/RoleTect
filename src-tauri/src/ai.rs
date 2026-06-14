@@ -45,6 +45,7 @@ pub async fn parse_job_description(
     provider: &str,
     model: &str,
     api_key: &str,
+    custom_base_url: Option<&str>,
     raw_jd: &str,
     job_url: Option<&str>,
 ) -> Result<JobParseResult, String> {
@@ -88,7 +89,12 @@ Output the results in the requested structured format.";
                 .map_err(|e| format!("Gemini AI Parsing Error: {}", e))?
         }
         "openai" => {
-            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
             let extractor = client.extractor::<JobDetails>(model).preamble(system_prompt).build();
             extractor
                 .extract(&user_prompt)
@@ -139,6 +145,7 @@ pub async fn tailor_latex_for_job(
     provider: &str,
     model: &str,
     api_key: &str,
+    custom_base_url: Option<&str>,
     base_latex: &str,
     raw_job_content: &str,
     custom_instruction: Option<&str>,
@@ -182,7 +189,12 @@ Please tailor the resume to match the job description. Return only the modified 
                 .map_err(|e| format!("Gemini AI Tailoring Error: {}", e))
         }
         "openai" => {
-            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
             let agent = client.agent(model).preamble(system_prompt).build();
             agent
                 .prompt(&user_prompt)
@@ -224,6 +236,7 @@ pub async fn tailor_latex_for_cover_letter(
     provider: &str,
     model: &str,
     api_key: &str,
+    custom_base_url: Option<&str>,
     base_latex: &str,
     raw_job_content: &str,
     custom_instruction: Option<&str>,
@@ -268,7 +281,12 @@ Please tailor the cover letter to match the job description. Return only the mod
                 .map_err(|e| format!("Gemini AI Tailoring Error: {}", e))
         }
         "openai" => {
-            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
             let agent = client.agent(model).preamble(system_prompt).build();
             agent
                 .prompt(&user_prompt)
@@ -310,6 +328,7 @@ pub async fn refine_tailored_resume(
     provider: &str,
     model: &str,
     api_key: &str,
+    custom_base_url: Option<&str>,
     current_latex: &str,
     instruction: &str,
 ) -> Result<String, String> {
@@ -343,7 +362,12 @@ Please apply the requested changes. Return only the updated LaTeX code."#,
                 .map_err(|e| format!("Gemini AI Refinement Error: {}", e))
         }
         "openai" => {
-            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
             let agent = client.agent(model).preamble(system_prompt).build();
             agent
                 .prompt(&user_prompt)
@@ -385,6 +409,7 @@ pub async fn fix_latex_errors(
     provider: &str,
     model: &str,
     api_key: &str,
+    custom_base_url: Option<&str>,
     broken_latex: &str,
     error_logs: &str,
 ) -> Result<String, String> {
@@ -418,7 +443,12 @@ Please fix the LaTeX code so it compiles successfully. Return only the fixed LaT
                 .map_err(|e| format!("Gemini AI Fix Error: {}", e))
         }
         "openai" => {
-            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
             let agent = client.agent(model).preamble(system_prompt).build();
             agent
                 .prompt(&user_prompt)
@@ -460,6 +490,7 @@ pub async fn refine_technical_content(
     provider: &str,
     model: &str,
     api_key: &str,
+    custom_base_url: Option<&str>,
     content: &str,
     instruction: &str,
     content_type: &str, // "Mermaid", "Markdown", "LaTeX"
@@ -497,7 +528,12 @@ Please apply the requested changes. Return only the updated code."#,
                 .map_err(|e| format!("Gemini AI Refinement Error: {}", e))
         }
         "openai" => {
-            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
             let agent = client.agent(model).preamble(&system_prompt).build();
             agent
                 .prompt(&user_prompt)
@@ -539,6 +575,7 @@ pub async fn fix_technical_errors(
     provider: &str,
     model: &str,
     api_key: &str,
+    custom_base_url: Option<&str>,
     broken_content: &str,
     error_logs: &str,
     content_type: &str,
@@ -576,7 +613,12 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
                 .map_err(|e| format!("Gemini AI Fix Error: {}", e))
         }
         "openai" => {
-            let client = openai::Client::new(api_key).map_err(|e| e.to_string())?;
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
             let agent = client.agent(model).preamble(&system_prompt).build();
             agent
                 .prompt(&user_prompt)

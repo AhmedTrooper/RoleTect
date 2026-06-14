@@ -1,6 +1,6 @@
-use tauri::command;
+use tauri::{command, State};
 use std::path::PathBuf;
-use crate::ai;
+use crate::{ai, AppState};
 use tectonic::status::StatusBackend;
 use tectonic::status::MessageKind;
 use std::fmt::Arguments;
@@ -48,28 +48,33 @@ impl StatusBackend for CapturingStatusBackend {
 
 #[command]
 pub async fn refine_latex_with_ai(
+    state: State<'_, AppState>,
     provider: String,
     model: String,
     api_key: String,
     current_latex: String,
     instruction: String,
 ) -> Result<String, String> {
-    ai::refine_technical_content(&provider, &model, &api_key, &current_latex, &instruction, "LaTeX").await
+    let custom_base_url = crate::commands::settings::get_custom_base_url(&state, &provider).await;
+    ai::refine_technical_content(&provider, &model, &api_key, custom_base_url.as_deref(), &current_latex, &instruction, "LaTeX").await
 }
 
 #[command]
 pub async fn fix_latex_with_ai(
+    state: State<'_, AppState>,
     provider: String,
     model: String,
     api_key: String,
     broken_latex: String,
     error_logs: String,
 ) -> Result<String, String> {
-    ai::fix_technical_errors(&provider, &model, &api_key, &broken_latex, &error_logs, "LaTeX").await
+    let custom_base_url = crate::commands::settings::get_custom_base_url(&state, &provider).await;
+    ai::fix_technical_errors(&provider, &model, &api_key, custom_base_url.as_deref(), &broken_latex, &error_logs, "LaTeX").await
 }
 
 #[command]
 pub async fn refine_diagram_with_ai(
+    state: State<'_, AppState>,
     provider: String,
     model: String,
     api_key: String,
@@ -77,11 +82,13 @@ pub async fn refine_diagram_with_ai(
     instruction: String,
     content_type: String,
 ) -> Result<String, String> {
-    ai::refine_technical_content(&provider, &model, &api_key, &current_code, &instruction, &content_type).await
+    let custom_base_url = crate::commands::settings::get_custom_base_url(&state, &provider).await;
+    ai::refine_technical_content(&provider, &model, &api_key, custom_base_url.as_deref(), &current_code, &instruction, &content_type).await
 }
 
 #[command]
 pub async fn fix_diagram_with_ai(
+    state: State<'_, AppState>,
     provider: String,
     model: String,
     api_key: String,
@@ -89,7 +96,8 @@ pub async fn fix_diagram_with_ai(
     error_logs: String,
     content_type: String,
 ) -> Result<String, String> {
-    ai::fix_technical_errors(&provider, &model, &api_key, &broken_code, &error_logs, &content_type).await
+    let custom_base_url = crate::commands::settings::get_custom_base_url(&state, &provider).await;
+    ai::fix_technical_errors(&provider, &model, &api_key, custom_base_url.as_deref(), &broken_code, &error_logs, &content_type).await
 }
 
 #[command]

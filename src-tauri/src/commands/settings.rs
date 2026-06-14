@@ -302,6 +302,21 @@ pub async fn get_setting(state: State<'_, AppState>, key: String, default_value:
     }).await
 }
 
+pub async fn get_custom_base_url(state: &AppState, provider: &str) -> Option<String> {
+    state.with_db(|conn| {
+        let key = format!("{}_custom_base_url", provider);
+        let val: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = ?1",
+                [&key],
+                |row| row.get(0),
+            )
+            .ok();
+        Ok(val.filter(|v| !v.trim().is_empty()))
+    }).await.unwrap_or(None)
+}
+
+
 #[tauri::command]
 pub async fn clear_tectonic_cache(app: tauri::AppHandle) -> Result<(), String> {
     use tauri::Manager;

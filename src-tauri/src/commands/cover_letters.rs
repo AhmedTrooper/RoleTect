@@ -351,10 +351,12 @@ pub async fn tailor_cover_letter(
     );
 
     // 3. Call AI
+    let custom_base_url = crate::commands::settings::get_custom_base_url(&state, &provider).await;
     let tailored_latex = ai::tailor_latex_for_cover_letter(
         &provider,
         &model,
         &api_key,
+        custom_base_url.as_deref(),
         &base_latex,
         &job_context,
         custom_instruction.as_deref(),
