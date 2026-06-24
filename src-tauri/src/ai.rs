@@ -1,6 +1,6 @@
 use rig::client::CompletionClient;
 use rig::completion::Prompt;
-use rig::providers::{anthropic, gemini, groq, openai};
+use rig::providers::{anthropic, gemini, groq, openai, ollama};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -139,6 +139,23 @@ Output the results in the requested structured format.";
                 .await
                 .map_err(|e| format!("Bedrock AI Parsing Error: {}", e))?
         }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let extractor = client.extractor::<JobDetails>(model).preamble(system_prompt).build();
+            extractor
+                .extract(&user_prompt)
+                .await
+                .map_err(|e| format!("Ollama Parsing Error: {}", e))?
+        }
         _ => return Err(format!("Unsupported provider: {}", provider)),
     };
 
@@ -250,6 +267,23 @@ Please tailor the resume to match the job description. Return only the modified 
                 .await
                 .map_err(|e| format!("Bedrock AI Tailoring Error: {}", e))
         }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Ollama Tailoring Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -353,6 +387,23 @@ Please tailor the cover letter to match the job description. Return only the mod
                 .await
                 .map_err(|e| format!("Bedrock AI Tailoring Error: {}", e))
         }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Ollama Tailoring Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -445,6 +496,23 @@ Please apply the requested changes. Return only the updated LaTeX code."#,
                 .await
                 .map_err(|e| format!("Bedrock AI Refinement Error: {}", e))
         }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Ollama Refinement Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -536,6 +604,23 @@ Please fix the LaTeX code so it compiles successfully. Return only the fixed LaT
                 .prompt(&user_prompt)
                 .await
                 .map_err(|e| format!("Bedrock AI Fix Error: {}", e))
+        }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Ollama Fix Error: {}", e))
         }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
@@ -633,6 +718,23 @@ Please apply the requested changes. Return only the updated code."#,
                 .await
                 .map_err(|e| format!("Bedrock AI Refinement Error: {}", e))
         }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(&system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Ollama Refinement Error: {}", e))
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -728,6 +830,23 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
                 .prompt(&user_prompt)
                 .await
                 .map_err(|e| format!("Bedrock AI Fix Error: {}", e))
+        }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(&system_prompt).build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("Ollama Fix Error: {}", e))
         }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }

@@ -177,7 +177,8 @@ const providers = [
   { id: 'gemini', name: 'Google Gemini' },
   { id: 'anthropic', name: 'Anthropic Claude' },
   { id: 'groq', name: 'Groq (Ultra-Fast)' },
-  { id: 'bedrock', name: 'AWS Bedrock' }
+  { id: 'bedrock', name: 'AWS Bedrock' },
+  { id: 'ollama', name: 'Ollama (Local LLM)' }
 ];
 
 const modelsByProvider: Record<string, {id: string, name: string}[]> = {
@@ -388,6 +389,23 @@ const modelsByProvider: Record<string, {id: string, name: string}[]> = {
     { id: 'writer.palmyra-vision-7b-v1:0', name: 'Palmyra Vision 7B' },
     { id: 'writer.palmyra-x5-v1:0', name: 'Palmyra X5' },
     { id: 'nvidia.nemotron-3-super-120b-v1:0', name: 'NVIDIA Nemotron 3 Super 120B' }
+  ],
+  ollama: [
+    { id: 'llama3', name: 'Llama 3 (8B)' },
+    { id: 'llama3.2', name: 'Llama 3.2 (3B)' },
+    { id: 'llama3.2:1b', name: 'Llama 3.2 (1B)' },
+    { id: 'llama3.3', name: 'Llama 3.3 (70B)' },
+    { id: 'phi3', name: 'Phi 3 (3.8B)' },
+    { id: 'gemma2', name: 'Gemma 2 (9B)' },
+    { id: 'gemma2:2b', name: 'Gemma 2 (2B)' },
+    { id: 'mistral', name: 'Mistral (7B)' },
+    { id: 'codegemma', name: 'CodeGemma (7B)' },
+    { id: 'codellama', name: 'Code Llama (7B)' },
+    { id: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (7B)' },
+    { id: 'qwen2.5-coder:1.5b', name: 'Qwen 2.5 Coder (1.5B)' },
+    { id: 'deepseek-r1:7b', name: 'DeepSeek R1 (7B)' },
+    { id: 'deepseek-r1:8b', name: 'DeepSeek R1 (8B)' },
+    { id: 'deepseek-r1:1.5b', name: 'DeepSeek R1 (1.5B)' }
   ]
 };
 
@@ -770,12 +788,14 @@ const handleSave = async () => {
             <input 
               v-model="customBaseUrlInput" 
               type="text" 
-              placeholder="e.g. https://api.deepseek.com/v1"
+              :placeholder="providerInput === 'ollama' ? 'e.g. http://localhost:11434' : 'e.g. https://api.deepseek.com/v1'"
               spellcheck="false"
               class="form-input"
             />
             <span class="setup-tip" style="font-size: 0.8rem; color: var(--muted); margin-top: 4px; display: block; line-height: 1.4;">
-              Override the API base URL for this provider (ideal for local or custom OpenAI-compatible endpoints).
+              {{ providerInput === 'ollama' 
+                ? 'Override the Ollama service URL (defaults to http://localhost:11434 if blank).' 
+                : 'Override the API base URL for this provider (ideal for local or custom OpenAI-compatible endpoints).' }}
             </span>
           </div>
 
@@ -809,6 +829,9 @@ const handleSave = async () => {
           <p v-if="providerInput === 'bedrock'">
             AWS Bedrock uses your AWS IAM credentials. Please enter them below to save them securely in your local vault.
           </p>
+          <p v-else-if="providerInput === 'ollama'">
+            Ollama runs locally and does not require an API key by default. You can leave this blank.
+          </p>
           <p v-else>Your {{ providerName }} key is stored in an encrypted vault. It is never sent to our servers.</p>
         </div>
         
@@ -820,7 +843,9 @@ const handleSave = async () => {
               type="password" 
               :placeholder="providerInput === 'bedrock' 
                 ? (store.hasSecureKey ? '•••••••••••••••• (Credentials saved)' : 'access_key_id:secret_access_key:region')
-                : (store.hasSecureKey ? '•••••••••••••••• (Key saved)' : 'Enter API Key...')"
+                : providerInput === 'ollama'
+                  ? (store.hasSecureKey ? '•••••••••••••••• (Key saved)' : 'Optional (leave blank for local)...')
+                  : (store.hasSecureKey ? '•••••••••••••••• (Key saved)' : 'Enter API Key...')"
               spellcheck="false"
               class="form-input"
             />

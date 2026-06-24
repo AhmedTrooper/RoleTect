@@ -231,9 +231,16 @@ export const useSettingsStore = defineStore('settings', () => {
       if (keyBytes && keyBytes.length > 0) {
         return new TextDecoder().decode(keyBytes);
       }
+      if (targetProvider === 'ollama') {
+        return 'ollama';
+      }
       return null;
     } catch (error) {
+      const targetProvider = provider || selectedAiProvider.value;
       console.error("Stronghold get error:", error);
+      if (targetProvider === 'ollama') {
+        return 'ollama';
+      }
       return null;
     }
   };
