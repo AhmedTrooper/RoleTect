@@ -1,99 +1,179 @@
 # RoleTect
 
-**RoleTect** is a powerful, privacy-first web & native application designed to streamline the job application process. By combining a local-first architecture with cutting-edge AI, RoleTect allows you to effortlessly manage your job search, securely tailor your resumes and cover letters using LaTeX, and keep track of your application status—all without compromising your data.
+RoleTect is a local-first, privacy-focused desktop application and companion browser extension designed to organize the job application process, parse job descriptions, and tailor LaTeX-based resumes and cover letters using on-device or API-driven AI models.
 
 ---
 
-## 🚀 Features
+## 🏗️ System Architecture
 
-*   **Local-First Privacy:** All your data, resumes, and job tracking information are stored locally in a secure SQLite database on your machine.
-*   **AI-Powered Tailoring:** Connect your preferred AI provider (Gemini, OpenAI, Anthropic, or Groq) to automatically extract job details and tailor your base LaTeX resumes and cover letters to specific job descriptions.
-*   **Integrated LaTeX Compiler:** Edit your templates and immediately preview the generated PDFs thanks to the embedded Tectonic LaTeX engine. No external dependencies required.
-*   **Browser Extension Integration:** Seamlessly capture job postings directly from your browser (Chrome/Firefox) and send them straight to your RoleTect inbox with a single click.
-*   **Application Tracking:** Track the status of every application from drafting to offer, including dates, salary details, and custom notes.
-*   **Theme Support:** Customize your workspace with built-in themes or create your own using the integrated theme editor.
+The following diagram illustrates how the components of RoleTect interact, from web scraping to secure key retrieval, database storage, and local compilation.
 
----
+```mermaid
+flowchart TD
+    subgraph Browser ["Web Browser"]
+        A[Job Posting Webpage] -->|1. Scrape & Compress DOM| B[Extension Content Script]
+        B -->|2. POST JSON + Secret Key| C[Extension Background Worker]
+    end
 
-## 👨‍💻 For Users (Job Seekers)
+    subgraph DesktopApp ["RoleTect (Tauri Desktop App)"]
+        C -->|3. Send Job Data| D[Local Axum Server]
+        D -->|4. Authenticate Secret| E[Tauri AppState]
+        E -->|5. Store Pending Job| F[(Local SQLite DB)]
+        
+        G[Vue 3 Frontend UI] -->|6. Trigger Parsing / Tailoring| H[Tauri Command Handlers]
+        
+        H -->|7. Request Decryption| I[IOTA Stronghold Vault]
+        I -->|8. Return Decrypted Key to Memory| H
+        
+        H -->|9. Run LLM Ingestion / Tailoring| J[Rig AI Library]
+        J -->|10. Execute API Call| K[AI Providers]
+        
+        H -->|11. Compile LaTeX Document| L[Tectonic Engine]
+        L -->|12. Output PDF Output| M[Local File System]
+    end
 
-RoleTect is your personal command center for landing your next role.
-
-### Getting Started
-
-1.  **Download the App:** Pre-compiled binaries for Windows, macOS, and Linux are available in the [Releases](https://github.com/AhmedTrooper/RoleTect/releases) section of this repository. Download the installer for your operating system.
-2.  **Set Up AI:** Go to the **Settings** tab and enter the API key for your preferred AI provider (e.g., Google Gemini). Your key is securely encrypted locally.
-3.  **Install the Extension (Optional but Recommended):** Install the companion browser extension for Chrome or Firefox from the `extentions/` folder. This allows you to quickly import jobs into your RoleTect Inbox.
-4.  **Create Base Templates:** Navigate to the **Resumes** and **Cover Letters** tabs to set up your master LaTeX templates.
-
-### Workflow
-
-1.  **Ingest:** Find a job you like online and use the browser extension to send it to RoleTect.
-2.  **Parse:** Open the **Inbox** in RoleTect, review the job, and let the AI parse the requirements and responsibilities.
-3.  **Tailor:** Once the job is saved, generate a tailored version of your resume or cover letter. The AI will intelligently adjust the content of your LaTeX template to highlight the most relevant skills.
-4.  **Compile & Apply:** Review the generated document in the **Compiler**, download the PDF, and submit your application.
-5.  **Track:** Update the job's status (Applied, Interviewing, Offer) to keep your search organized.
-
----
-
-## 🎯 For Tech Recruiters
-
-RoleTect isn't just for job seekers. If you manage multiple candidates or help structure resumes, RoleTect offers a robust platform for document generation and management.
-
-*   **Standardized Formatting:** Use the LaTeX compiler to ensure all candidate profiles adhere to a consistent, professional layout before presenting them to clients.
-*   **Rapid Tailoring:** Quickly adjust a candidate's master profile to highlight specific skills required for a particular requisition using the AI tailoring tools.
-*   **Data Security:** Because RoleTect is local-first, you maintain strict confidentiality and compliance regarding candidate data. No candidate information is stored on external application servers.
+    classDef component fill:#2a2f3d,stroke:#4e5a75,stroke-width:1px,color:#fff;
+    classDef storage fill:#1e2430,stroke:#3b475c,stroke-width:2px,color:#fff;
+    class Browser,DesktopApp component;
+    class F,I storage;
+```
 
 ---
 
-## 🛠️ For Developers
+## 🎯 Core Features & Technical Implementation
 
-RoleTect is built with **Tauri v2**, a **Vue 3** frontend, and a **Rust** backend.
+### 1. Zero-Trust API Key Storage (IOTA Stronghold Enclave)
+*   **The Issue:** Storing API keys in plaintext files or standard databases leaves them vulnerable to extraction by local malware.
+*   **The Solution:** RoleTect utilizes `tauri-plugin-stronghold` to create an encrypted database enclave (`secrets.stronghold`) utilizing Argon2 key derivation.
+*   **Runtime Security:** A cryptographically random 256-bit passkey is generated at first run and stored locally. API credentials are decrypted on-the-fly inside Rust command memory only when executing AI calls, and are never saved to the SQLite database.
+
+### 2. Secure Local Ingest Server (Axum Core)
+*   **Dynamic Port Bindings:** At startup, the Tauri backend spins up a local Axum server. It tests a port range (from `14207` to `14280`) to avoid port conflicts and registers the active port in the local configuration.
+*   **Authentication:** The browser extension communicates with the Axum server using a dynamic 32-character secret key generated with `nanoid`. Requests lacking this secret in the JSON payload are rejected with a `401 Unauthorized` status.
+
+### 3. Token-Squashing Scraper Pipeline
+*   **Efficiency:** Raw HTML bloats token counts and incurs unnecessary API costs.
+*   **DOM Sanitation:** The extension cleans the webpage DOM before transmission, stripping scripts, CSS styles, images, inline SVGs, iframes, navbars, and buttons.
+*   **Text Processing:** The content script runs a regex pipeline to collapse vertical spacing, convert returns into periods, eliminate horizontal gaps, and squash duplicate periods.
+
+### 4. On-Device Tectonic LaTeX Compilation
+*   **Architecture:** To bypass the requirement of a system-wide LaTeX installation (such as TeX Live or MiKTeX), RoleTect embeds the **Tectonic compiler** directly into a background thread.
+*   **Compilation Isolation:** PDF compilation runs in a dedicated thread stack sized to 10MB to handle complex LaTeX structures, utilizing a temporary directory to manage intermediate files and cache output dynamically.
+
+### 5. AI-Assisted Technical Diagramming Workspace
+*   **Interactive Visual Canvas:** Incorporates a dedicated workspace for creating, editing, and rendering Mermaid.js flowcharts, sequence diagrams, and ER diagrams.
+*   **Interactive Panning & Zooming:** Uses `svg-pan-zoom` to allow users to interact with large, complex layouts.
+*   **AI Synthesis & Repair:** Features specialized commands (`refine_diagram_with_ai`, `fix_diagram_with_ai`) that use AI to dynamically build, refine, and debug diagrams from conversational natural language instructions.
+
+### 6. Multi-Provider LLM Orchestration
+*   **Implementation:** Using the Rust-based `rig` AI library, the application integrates with Gemini, OpenAI, Anthropic, Groq, and Bedrock.
+*   **Local Inference Support:** Supports Ollama, enabling users to keep both their data and LLM operations entirely offline.
+
+---
+
+## 📂 Project Structure
+
+```text
+├── application/             # Standalone assets & icons
+├── src-tauri/               # Tauri Rust Backend
+│   ├── src/
+│   │   ├── commands/        # Tauri command handlers (settings, compiler, database)
+│   │   ├── ai.rs            # Rig LLM integration & prompt templates
+│   │   ├── db.rs            # rusqlite database initialization and migrations
+│   │   ├── lib.rs           # Tauri app setup & plugin registration
+│   │   └── server.rs        # Axum local server
+│   └── Cargo.toml           # Rust backend dependencies
+├── src/                     # Vue 3 Frontend
+│   ├── components/          # Views & UI Components (Editor, Job Tracker, Settings)
+│   ├── store/               # Pinia State Management (Settings, Jobs, Resumes)
+│   └── App.vue              # Main App wrapper
+├── extentions/              # Browser Extensions
+│   ├── chrome/              # Manifest V3 extension code
+│   └── firefox/             # Firefox compatible manifest extension code
+└── README.md
+```
+
+---
+
+## 🚀 Setup & Local Execution
 
 ### Prerequisites
-
-Ensure you have the following installed:
 *   [Node.js](https://nodejs.org/) (v18+)
-*   [Rust](https://www.rust-lang.org/tools/install)
-*   [Tauri Prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites) (C++ build tools, WebKit, etc., depending on your OS)
-*   [Bun](https://bun.sh/) (Optional, but used in the project configuration)
+*   [Rust Compiler & Cargo](https://www.rust-lang.org/)
+*   [Bun Package Manager](https://bun.sh/) (Recommended, or npm)
 
-### Local Setup
-
-1.  **Clone the repository:**
+### Backend & Frontend Setup
+1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/AhmedTrooper/RoleTect.git
     cd RoleTect
     ```
-
-2.  **Install dependencies:**
+2.  **Install Dependencies:**
     ```bash
-    npm install
-    # or
     bun install
+    # or
+    npm install
     ```
-
-3.  **Run the development server:**
-    This command will start the Vite development server and open the Tauri desktop window.
+3.  **Run Development Environment:**
     ```bash
+    bun run tauri dev
+    # or
     npm run tauri dev
     ```
 
-### Architecture Overview
+### Extension Installation
+1.  Open your browser and navigate to the extensions page (e.g., `chrome://extensions` in Chrome).
+2.  Enable **Developer Mode** (toggle in the top-right corner).
+3.  Click **Load unpacked** and select the `extentions/chrome` folder (or `extentions/firefox` for Firefox).
+4.  Copy the **Secret Key** and **Active Server Port** from the *Inbox* or *Settings* tab in the RoleTect desktop app and paste them into the extension settings popup.
 
-*   **`src/`:** The Vue 3 frontend application. Manages UI, routing, and state (Pinia).
-*   **`src-tauri/src/`:** The Rust backend.
-    *   `db.rs`: SQLite database schema and migrations.
-    *   `ai.rs`: Integrations with AI providers via the `rig` library.
-    *   `server.rs`: A local Axum server that receives job data from the browser extensions.
-    *   `commands/`: Tauri commands invoked by the frontend.
-*   **`extentions/`:** Source code for the Chrome and Firefox browser extensions.
+---
 
-### Building for Production
+## 📊 Model & Data Card
 
-To compile the application into a standalone binary:
+### 1. Model Summary
+*   **Recommended Models:** `gemini-1.5-pro` / `gemini-1.5-flash` (via Google AI Studio), `gpt-4o` / `gpt-4o-mini` (via OpenAI), or `llama3-70b-8192` (via Groq).
+*   **Local Inference:** Compatible with any GGUF running via `ollama` locally (e.g., `llama3:8b`).
+*   **AI Roles:**
+    *   **Parser:** Evaluates raw text/URL crawled data and maps it to a JSON schema defining validation properties (job details, responsibilities, requirements).
+    *   **Tailoring Engine:** Injects matching skills and structural details directly into LaTeX resume structures while conserving compilability.
+    *   **Debugger:** Ingests Tectonic error logs and broken code strings to resolve LaTeX syntax errors.
 
-```bash
-npm run tauri build
-```
-The compiled binaries will be located in `src-tauri/target/release/bundle/`.
+### 2. Data Processing Policy
+*   **Zero-Cloud Storage:** RoleTect operates no remote application servers. Job details, resumes, templates, and application progress remain in a local SQLite file.
+*   **Inference Path:** Data sent to LLMs is routed directly from the desktop client to the selected API provider endpoint via HTTPS. No third-party relays are used.
+
+### 3. Limitations & Considerations
+*   **Initial Compiler Latency:** On its first run, the Tectonic engine downloads compiler assets to compile document structures. Subsequent runs utilize the local Tectonic cache.
+*   **Offline Compilation:** While LaTeX PDF generation is 100% offline, AI-based parsing and tailoring require a network connection unless a local model is running via Ollama.
+
+---
+
+## 🔓 Open-Source Attribution & Licensing Directory
+
+In compliance with **Section 10.2** of the SciBlitz AI Challenge 2026 Rulebook, below is the comprehensive attribution list of third-party open-source libraries, engines, and AI models utilized in the development of RoleTect.
+
+### 1. Backend Core & Plugins (Rust)
+*   **Tauri v2 Framework** (MIT / Apache-2.0) | Cross-platform runtime orchestration.
+*   **Tectonic Engine** (MIT) | Self-contained LaTeX-to-PDF compiler.
+*   **Rig AI Framework** (MIT) | Declarative agent structures & LLM connector.
+*   **Axum & Tokio** (MIT) | Non-blocking web server and async execution runtime.
+*   **IOTA Stronghold** (Apache-2.0 / MIT) | Argon2 secure local database enclave.
+*   **rusqlite** (MIT) | Native SQLite wrapper for local relational tracking.
+*   **tower-http** (MIT) | CORS and network request middleware layers.
+
+### 2. Frontend Application (Vue 3 / TypeScript)
+*   **Vue 3** (MIT) | Declarative user interface runtime.
+*   **Vite** (MIT) | Frontend bundler and build system.
+*   **Pinia** (MIT) | Global state stores for configurations and workspace files.
+*   **CodeMirror** (MIT) | In-browser LaTeX editor canvas.
+*   **DOMPurify** (Apache-2.0) | HTML sanitization preventing XSS during ingestion.
+*   **Mermaid.js** (MIT) | Client-side markup diagram renderer.
+*   **Motion-V** (MIT) | UI transition and micro-animation engine.
+*   **svg-pan-zoom** (MIT) | Interactive PDF preview panning tools.
+
+### 3. Pre-trained AI Models (Third-party)
+*   **Gemini 1.5 Pro & Flash** (Google AI Studio Terms of Service) | Used for structured job schema parsing and resume template tailoring.
+*   **GPT-4o & GPT-4o-mini** (OpenAI APIs Terms of Service) | Supported alternative routing models.
+*   **Claude 3.5 Sonnet** (Anthropic API Terms of Service) | High-fidelity LaTeX syntax debugging.
+*   **Llama 3 (8B/70B)** (Meta LLaMA 3 License Agreement) | Local inference compatible model via Ollama.
