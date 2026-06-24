@@ -332,3 +332,14 @@ pub async fn clear_tectonic_cache(app: tauri::AppHandle) -> Result<(), String> {
     
     Ok(())
 }
+
+#[tauri::command]
+pub async fn test_ai_connection(
+    state: State<'_, AppState>,
+    provider: String,
+    model: String,
+    api_key: String,
+) -> Result<String, String> {
+    let custom_base_url = get_custom_base_url(&state, &provider).await;
+    crate::ai::test_ai(&provider, &model, &api_key, custom_base_url.as_deref()).await
+}

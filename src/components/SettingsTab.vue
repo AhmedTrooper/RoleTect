@@ -14,7 +14,8 @@ import {
   Plus,
   Trash2,
   Type,
-  Italic
+  Italic,
+  Play
 } from '@lucide/vue';
 import { Motion, AnimatePresence } from 'motion-v';
 import { invoke } from '@tauri-apps/api/core';
@@ -546,6 +547,41 @@ const handleResetTypography = async () => {
   }
 };
 
+const isTestingConnection = ref(false);
+
+const handleTestConnection = async () => {
+  isTestingConnection.value = true;
+  saveError.value = '';
+  
+  try {
+    let testKey = apiKeyInput.value.trim();
+    if (testKey === '') {
+      const decrypted = await store.getDecryptedKey(providerInput.value);
+      testKey = decrypted || '';
+    }
+    
+    const response = await invoke<string>('test_ai_connection', {
+      provider: providerInput.value,
+      model: modelInput.value,
+      apiKey: testKey
+    });
+    
+    let formattedResponse = response;
+    try {
+      const parsed = JSON.parse(response);
+      formattedResponse = JSON.stringify(parsed, null, 2);
+    } catch {
+      // Ignore parsing error
+    }
+    
+    await dialog.showAlert(`Response:\n${formattedResponse}`, 'AI Connection Succeeded');
+  } catch (error: any) {
+    await dialog.showAlert(error.toString(), 'AI Connection Failed');
+  } finally {
+    isTestingConnection.value = false;
+  }
+};
+
 const handleSave = async () => {
   isSaving.value = true;
   saveError.value = '';
@@ -865,6 +901,16 @@ const handleSave = async () => {
             </div>
             
             <div class="button-group">
+              <button 
+                class="btn-test-connection" 
+                @click="handleTestConnection" 
+                :disabled="isTestingConnection || isSaving"
+              >
+                <Play v-if="!isTestingConnection" :size="14" />
+                <RotateCcw v-else :size="14" class="spinner" />
+                Test Connection
+              </button>
+
               <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'discard'" @mouseleave="activeTooltip = null">
                 <button 
                   v-if="hasChanges" 
@@ -1385,6 +1431,33 @@ label {
 }
 
 .button-group { display: flex; gap: 12px; }
+
+.btn-test-connection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-accent);
+  border: 1px solid var(--line);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  border-radius: 10px;
+  padding: 0 16px;
+  height: 42px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-test-connection:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface-soft);
+}
+
+.btn-test-connection:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .btn-action {
   width: 42px;

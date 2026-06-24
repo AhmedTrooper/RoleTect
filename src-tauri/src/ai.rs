@@ -851,3 +851,70 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
+
+pub async fn test_ai(
+    provider: &str,
+    model: &str,
+    api_key: &str,
+    custom_base_url: Option<&str>,
+) -> Result<String, String> {
+    let model = model.trim();
+    let system_prompt = "You are a test agent. Respond ONLY with a valid JSON object containing a 'status' field with the value 'ok'. Do not include markdown code fences, formatting, or extra explanations.";
+    let user_prompt = "Perform connection test. Respond in JSON.";
+
+    match provider {
+        "gemini" => {
+            let client = gemini::Client::new(api_key).map_err(|e| e.to_string())?;
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(user_prompt).await.map_err(|e| format!("Gemini AI Error: {}", e))
+        }
+        "openai" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openai::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openai::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(user_prompt).await.map_err(|e| format!("OpenAI Error: {}", e))
+        }
+        "groq" => {
+            let client = groq::Client::new(api_key).map_err(|e| e.to_string())?;
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(user_prompt).await.map_err(|e| format!("Groq Error: {}", e))
+        }
+        "anthropic" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    anthropic::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => anthropic::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(user_prompt).await.map_err(|e| format!("Anthropic Error: {}", e))
+        }
+        "bedrock" => {
+            configure_aws_credentials(api_key);
+            let config = aws_config::load_from_env().await;
+            let bedrock_client = aws_sdk_bedrockruntime::Client::new(&config);
+            let client = rig_bedrock::client::Client::from(bedrock_client);
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(user_prompt).await.map_err(|e| format!("Bedrock AI Error: {}", e))
+        }
+        "ollama" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    ollama::Client::builder()
+                        .api_key(ollama::OllamaApiKey::default())
+                        .base_url(url)
+                        .build()
+                        .map_err(|e| e.to_string())?
+                }
+                _ => ollama::Client::new(ollama::OllamaApiKey::default()).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(user_prompt).await.map_err(|e| format!("Ollama Error: {}", e))
+        }
+        _ => Err(format!("Unsupported provider: {}", provider)),
+    }
+}
