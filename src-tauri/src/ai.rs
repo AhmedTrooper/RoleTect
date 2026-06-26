@@ -1,6 +1,6 @@
 use rig::client::CompletionClient;
 use rig::completion::Prompt;
-use rig::providers::{anthropic, gemini, groq, openai, ollama};
+use rig::providers::{anthropic, gemini, groq, openai, ollama, openrouter};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -87,6 +87,22 @@ Output the results in the requested structured format.";
                 .extract(&user_prompt)
                 .await
                 .map_err(|e| format!("Gemini AI Parsing Error: {}", e))?
+        }
+        "openrouter" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.extractor::<JobDetails>(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let extractor = builder.build();
+            extractor
+                .extract(&user_prompt)
+                .await
+                .map_err(|e| format!("OpenRouter Parsing Error: {}", e))?
         }
         "openai" => {
             let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
@@ -216,6 +232,22 @@ Please tailor the resume to match the job description. Return only the modified 
                 .await
                 .map_err(|e| format!("Gemini AI Tailoring Error: {}", e))
         }
+        "openrouter" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("OpenRouter Tailoring Error: {}", e))
+        }
         "openai" => {
             let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
@@ -336,6 +368,22 @@ Please tailor the cover letter to match the job description. Return only the mod
                 .await
                 .map_err(|e| format!("Gemini AI Tailoring Error: {}", e))
         }
+        "openrouter" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("OpenRouter Tailoring Error: {}", e))
+        }
         "openai" => {
             let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
@@ -445,6 +493,22 @@ Please apply the requested changes. Return only the updated LaTeX code."#,
                 .await
                 .map_err(|e| format!("Gemini AI Refinement Error: {}", e))
         }
+        "openrouter" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("OpenRouter Refinement Error: {}", e))
+        }
         "openai" => {
             let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
@@ -553,6 +617,22 @@ Please fix the LaTeX code so it compiles successfully. Return only the fixed LaT
                 .prompt(&user_prompt)
                 .await
                 .map_err(|e| format!("Gemini AI Fix Error: {}", e))
+        }
+        "openrouter" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("OpenRouter Fix Error: {}", e))
         }
         "openai" => {
             let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
@@ -667,6 +747,22 @@ Please apply the requested changes. Return only the updated code."#,
                 .await
                 .map_err(|e| format!("Gemini AI Refinement Error: {}", e))
         }
+        "openrouter" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(&system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("OpenRouter Refinement Error: {}", e))
+        }
         "openai" => {
             let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
@@ -780,6 +876,22 @@ Please fix the code so it renders successfully. Return only the fixed code."#,
                 .await
                 .map_err(|e| format!("Gemini AI Fix Error: {}", e))
         }
+        "openrouter" => {
+            let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let mut builder = client.agent(model).preamble(&system_prompt);
+            if is_custom { builder = builder.max_tokens(131072); }
+            let agent = builder.build();
+            agent
+                .prompt(&user_prompt)
+                .await
+                .map_err(|e| format!("OpenRouter Fix Error: {}", e))
+        }
         "openai" => {
             let is_custom = custom_base_url.map_or(false, |u| !u.trim().is_empty());
             let client = match custom_base_url {
@@ -867,6 +979,16 @@ pub async fn test_ai(
             let client = gemini::Client::new(api_key).map_err(|e| e.to_string())?;
             let agent = client.agent(model).preamble(system_prompt).build();
             agent.prompt(user_prompt).await.map_err(|e| format!("Gemini AI Error: {}", e))
+        }
+        "openrouter" => {
+            let client = match custom_base_url {
+                Some(url) if !url.trim().is_empty() => {
+                    openrouter::Client::builder().api_key(api_key).base_url(url).build().map_err(|e| e.to_string())?
+                }
+                _ => openrouter::Client::new(api_key).map_err(|e| e.to_string())?,
+            };
+            let agent = client.agent(model).preamble(system_prompt).build();
+            agent.prompt(user_prompt).await.map_err(|e| format!("OpenRouter Error: {}", e))
         }
         "openai" => {
             let client = match custom_base_url {

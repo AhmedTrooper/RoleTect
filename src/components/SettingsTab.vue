@@ -179,10 +179,59 @@ const providers = [
   { id: 'anthropic', name: 'Anthropic Claude' },
   { id: 'groq', name: 'Groq (Ultra-Fast)' },
   { id: 'bedrock', name: 'AWS Bedrock' },
-  { id: 'ollama', name: 'Ollama (Local LLM)' }
+  { id: 'ollama', name: 'Ollama (Local LLM)' },
+  { id: 'openrouter', name: 'OpenRouter' }
 ];
 
 const modelsByProvider: Record<string, {id: string, name: string}[]> = {
+  openrouter: [
+    // --- Gemini 2.x and 2.5 ---
+    { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+    { id: 'google/gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Exp' },
+    
+    // --- Claude Models ---
+    { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
+    { id: 'anthropic/claude-3.7-sonnet:thinking', name: 'Claude 3.7 Sonnet (Thinking)' },
+    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+    { id: 'anthropic/claude-3.5-sonnet:beta', name: 'Claude 3.5 Sonnet (Beta)' },
+    { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus' },
+    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku' },
+    { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku' },
+
+    // --- DeepSeek Models ---
+    { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3' },
+    { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1' },
+    { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Free)' },
+    { id: 'deepseek/deepseek-chat:free', name: 'DeepSeek V3 (Free)' },
+
+    // --- Llama Models ---
+    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct' },
+    { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B Instruct' },
+    { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B Instruct' },
+    { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct' },
+    { id: 'meta-llama/llama-3.2-3b-instruct', name: 'Llama 3.2 3B Instruct' },
+    { id: 'meta-llama/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision' },
+    { id: 'meta-llama/llama-3.2-90b-vision-instruct', name: 'Llama 3.2 90B Vision' },
+
+    // --- Qwen & Mistral Models ---
+    { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B Instruct' },
+    { id: 'qwen/qwen-2.5-coder-32b-instruct', name: 'Qwen 2.5 Coder 32B' },
+    { id: 'qwen/qwen-2.5-7b-instruct', name: 'Qwen 2.5 7B' },
+    { id: 'mistralai/mistral-large', name: 'Mistral Large 2411' },
+    { id: 'mistralai/pixtral-large-2411', name: 'Pixtral Large' },
+    { id: 'mistralai/mistral-7b-instruct', name: 'Mistral 7B Instruct' },
+
+    // --- OpenAI Models ---
+    { id: 'openai/gpt-4o', name: 'GPT-4o' },
+    { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' },
+    { id: 'openai/o1', name: 'o1' },
+    { id: 'openai/o1-mini', name: 'o1 Mini' },
+    { id: 'openai/o1-preview', name: 'o1 Preview' },
+    { id: 'openai/o3-mini', name: 'o3 Mini' },
+    { id: 'openai/o3-mini:high', name: 'o3 Mini (High Reasoning)' },
+    { id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo' }
+  ],
   openai: [
     // --- Legacy / Very Old ---
     { id: 'gpt-1', name: 'GPT-1 (Historical)' },
