@@ -337,22 +337,18 @@ const handleExternalClick = (url: string) => {
     height: 100%;
     width: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 @media (max-width: 959px) {
-    .app-container {
-        /* Always keep margin for Titlebar */
-        height: calc(100vh - 36px);
-        margin-top: 36px;
-    }
     .nav-divider {
-        display: none; /* Hide divider on mobile to save space */
+        display: none;
     }
     .nav-item {
-        padding: 8px 10px; /* More compact padding */
+        padding: 8px 10px;
     }
     .icon-wrapper {
-        font-size: 1rem; /* Slightly smaller icons on mobile */
+        font-size: 1rem;
     }
 }
 

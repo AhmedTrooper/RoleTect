@@ -423,14 +423,14 @@ const getStatusClass = (status: string) => {
   padding: 40px;
   max-width: 1200px;
   margin: 0 auto;
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .jobs-list-wrapper {
   flex: 1;
-  min-height: 0;
+  min-height: 400px;
 }
 
 .scroller {

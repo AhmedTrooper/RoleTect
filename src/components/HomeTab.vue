@@ -263,9 +263,14 @@ watch(() => route.fullPath, async () => {
 .item:last-child { border-bottom: none; }
 .item:hover { background: var(--surface-soft); }
 
-.item-title { display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink); }
-.item-meta { font-size: 0.75rem; color: var(--muted); }
-.item-date { font-size: 0.7rem; color: var(--muted); font-family: monospace; }
+.item-main {
+  min-width: 0;
+  flex: 1;
+  padding-right: 12px;
+}
+.item-title { display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-meta { font-size: 0.75rem; color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-date { font-size: 0.7rem; color: var(--muted); font-family: monospace; white-space: nowrap; }
 
 .empty-state {
   padding: 32px;

@@ -675,8 +675,8 @@ const handleCreateCl = async () => {
 .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-20px); }
 
 @media (max-width: 768px) {
-  .cl-container { padding: 20px; }
-  .page-header { flex-direction: column; gap: 20px; align-items: stretch; }
+  .cl-container { padding: 16px; }
+  .page-header { flex-direction: column; gap: 16px; align-items: stretch; margin-bottom: 20px; }
   .header-actions { justify-content: space-between; }
   .form-grid { grid-template-columns: 1fr; }
 }

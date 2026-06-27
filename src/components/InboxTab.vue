@@ -407,7 +407,7 @@ const getStatusClass = (status: string) => {
                 <span class="url-text">{{ job.url }}</span>
               </div>
               <div class="description-preview">
-                {{ job.raw_description.substring(0, 200) }}...
+                {{ job.raw_description.substring(0, 80) }}...
               </div>
             </div>
 
@@ -416,18 +416,19 @@ const getStatusClass = (status: string) => {
                 <button class="icon-btn danger" @click.stop="deleteJob(job.id)">
                   <Trash2 :size="16" />
                 </button>
-                <button 
-                  v-if="job.status === 'Pending'"
-                  class="process-btn" 
-                  @click.stop="processJob(job)"
-                  :disabled="isProcessing || processingJobs.has(job.id)"
-                >
-                  <RefreshCw v-if="processingJobs.has(job.id)" :size="14" class="spinner" />
-                  <Cpu v-else :size="14" /> 
-                  {{ processingJobs.has(job.id) ? 'Analyzing...' : 'Process with AI' }}
-                </button>
-                <div v-else class="done-indicator">
-                  <CheckCircle :size="14" /> Processed
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div v-if="job.status === 'Processed'" class="done-indicator">
+                    <CheckCircle :size="14" /> Processed
+                  </div>
+                  <button 
+                    class="process-btn" 
+                    @click.stop="processJob(job)"
+                    :disabled="isProcessing || processingJobs.has(job.id)"
+                  >
+                    <RefreshCw v-if="processingJobs.has(job.id)" :size="14" class="spinner" />
+                    <Cpu v-else :size="14" /> 
+                    {{ processingJobs.has(job.id) ? 'Analyzing...' : (job.status === 'Processed' ? 'Re-Process' : 'Process with AI') }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -481,7 +482,7 @@ const getStatusClass = (status: string) => {
   padding: 40px;
   max-width: 1200px;
   margin: 0 auto;
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -558,7 +559,7 @@ const getStatusClass = (status: string) => {
   display: flex;
   gap: 32px;
   flex: 1;
-  min-height: 0;
+  min-height: 400px;
 }
 
 .main-content {
@@ -567,6 +568,7 @@ const getStatusClass = (status: string) => {
   flex-direction: column;
   gap: 20px;
   min-height: 0;
+  min-width: 0;
 }
 
 .processing-banner {
@@ -617,6 +619,8 @@ const getStatusClass = (status: string) => {
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .inbox-card:hover {
@@ -696,19 +700,27 @@ const getStatusClass = (status: string) => {
   color: var(--accent);
   font-size: 0.8rem;
   font-weight: 600;
+  min-width: 0;
 }
 
 .url-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+  display: block;
 }
 
 .description-preview {
   font-size: 0.85rem;
-  color: var(--ink);
-  line-height: 1.6;
-  opacity: 0.8;
+  color: var(--muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .card-footer {
@@ -900,5 +912,41 @@ const getStatusClass = (status: string) => {
 @media (max-width: 900px) {
   .inbox-layout { flex-direction: column; }
   .config-sidebar { width: 100%; }
+}
+
+@media (max-width: 768px) {
+  .inbox-container { padding: 16px; }
+  .page-header { flex-direction: column; gap: 16px; align-items: stretch; margin-bottom: 20px; }
+  .filters-bar { flex-direction: column; gap: 16px; align-items: stretch; padding: 16px; margin-bottom: 16px; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .inbox-stats { text-align: center; margin-top: 8px; }
+  .btn-primary, .btn-secondary, .btn-danger-outline { width: 36px; height: 36px; }
+  .header-actions { justify-content: flex-end; }
+}
+
+@media (max-width: 500px) {
+  .inbox-card {
+    padding: 16px;
+  }
+  .card-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  .actions {
+    gap: 12px;
+  }
+  .process-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 </style>
