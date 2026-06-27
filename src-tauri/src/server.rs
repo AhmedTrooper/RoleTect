@@ -34,7 +34,10 @@ pub async fn start_server(app_handle: AppHandle) {
     });
 
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin([
+            "http://localhost:1420".parse().unwrap(),
+            "tauri://localhost".parse().unwrap(),
+        ])
         .allow_methods(Any)
         .allow_headers(Any);
 
@@ -47,7 +50,7 @@ pub async fn start_server(app_handle: AppHandle) {
     let ports = [14207, 14213, 1420, 14229, 14235, 14266, 14247, 14298, 14259, 14280];
 
     for port in ports {
-        let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
         let listener = tokio::net::TcpListener::bind(addr).await;
         
         match listener {

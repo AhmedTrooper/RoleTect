@@ -108,10 +108,20 @@ document.addEventListener('DOMContentLoaded', () => {
     advancedInputArea.style.display = isAdvanced ? 'block' : 'none';
   }
 
+  function escapeHTML(str) {
+    return String(str).replace(/[&<>'"]/g, tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag]));
+  }
+
   function renderSiteMaps() {
     // Update Select Dropdown in Extract Tab
     siteSelector.innerHTML = siteMaps.length > 0 
-      ? siteMaps.map((site, index) => `<option value="${index}">${site.title}</option>`).join('')
+      ? siteMaps.map((site, index) => `<option value="${index}">${escapeHTML(site.title)}</option>`).join('')
       : '<option value="">-- No Sites Saved --</option>';
 
     // Update List in Settings Tab
@@ -123,12 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="site-map-item" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
           <div style="flex-grow: 1;">
             <div style="display: flex; align-items: center; gap: 5px;">
-              <strong style="font-size: 11px;">${site.title}</strong>
+              <strong style="font-size: 11px;">${escapeHTML(site.title)}</strong>
               ${defaultSite ? '<span style="font-size: 8px; background: var(--accent); color: white; padding: 1px 4px; border-radius: 3px;">Built-in</span>' : ''}
               ${isModified ? '<span style="font-size: 8px; background: #e3b341; color: black; padding: 1px 4px; border-radius: 3px;">Modified</span>' : ''}
             </div>
-            <code style="display: block; font-size: 9px; color: var(--muted); margin-top: 2px;">IN: ${site.selector}</code>
-            ${site.exclude ? `<code style="display: block; font-size: 9px; color: #f85149; margin-top: 2px;">EX: ${site.exclude}</code>` : ''}
+            <code style="display: block; font-size: 9px; color: var(--muted); margin-top: 2px;">IN: ${escapeHTML(site.selector)}</code>
+            ${site.exclude ? `<code style="display: block; font-size: 9px; color: #f85149; margin-top: 2px;">EX: ${escapeHTML(site.exclude)}</code>` : ''}
           </div>
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <button class="edit-btn secondary-btn" data-index="${index}" style="font-size: 9px !important; padding: 2px 5px !important; border-color: var(--accent) !important;">Edit</button>
