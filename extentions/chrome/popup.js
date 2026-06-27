@@ -468,6 +468,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  document.getElementById('interactiveBtn').addEventListener('click', async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: "START_INTERACTIVE" });
+      if (response && response.success) {
+        window.close();
+      } else {
+        const errorMsg = response?.error || "Failed to start interactive mode.";
+        showStatus("Error: " + errorMsg, "error");
+      }
+    } catch (err) {
+      showStatus("Error: " + err.message, "error");
+    }
+  });
+
   function showStatus(msg, type) {
     statusDiv.textContent = msg;
     statusDiv.className = "";
