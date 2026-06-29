@@ -467,8 +467,13 @@ const refreshFileTree = async () => {
     fileTree.value = await scanDirectoryRecursive(workspacePath.value, fileTree.value);
     await nextTick();
     if (fileTreeContainerRef.value) {
-      fileTreeContainerRef.value.scrollLeft = savedScrollLeft;
-      fileTreeContainerRef.value.scrollTop = savedScrollTop;
+      // Use setTimeout to ensure DOM has fully painted its new width/height before scrolling
+      setTimeout(() => {
+        if (fileTreeContainerRef.value) {
+          fileTreeContainerRef.value.scrollLeft = savedScrollLeft;
+          fileTreeContainerRef.value.scrollTop = savedScrollTop;
+        }
+      }, 50);
     }
   } catch (err) {
     console.error('Failed to scan workspace:', err);
@@ -1198,7 +1203,7 @@ const activeFileName = computed(() => {
             <span>PDF PREVIEW</span>
           </div>
           <div v-if="pdfUrl" class="pdf-viewer">
-            <iframe :src="pdfUrl"></iframe>
+            <object :data="pdfUrl" type="application/pdf"></object>
           </div>
           <div v-else class="empty-preview">
             <div class="placeholder-content">
@@ -1472,7 +1477,7 @@ const activeFileName = computed(() => {
   position: relative;
 }
 
-.split-pane.is-resizing iframe {
+.split-pane.is-resizing object {
   pointer-events: none !important;
 }
 
@@ -1919,8 +1924,11 @@ const activeFileName = computed(() => {
   overflow: hidden;
 }
 
-.pdf-viewer iframe {
+.pdf-viewer object {
   display: block;
+  margin: 0;
+  padding: 0;
+  vertical-align: top;
   width: 100%;
   height: 100%;
   border: none;
