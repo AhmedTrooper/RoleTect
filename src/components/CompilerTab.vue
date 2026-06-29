@@ -287,7 +287,13 @@ const handleMouseMove = (e: MouseEvent) => {
   if (!isResizing.value || !splitPaneRef.value) return;
   const rect = splitPaneRef.value.getBoundingClientRect();
   const newWidth = e.clientX - rect.left;
-  sidebarWidth.value = Math.max(150, Math.min(500, newWidth));
+  if (newWidth < 100) {
+    isSidebarVisible.value = false;
+    stopResizing();
+    sidebarWidth.value = 240;
+    return;
+  }
+  sidebarWidth.value = Math.max(180, Math.min(500, newWidth));
 };
 
 const stopResizing = () => {
@@ -310,9 +316,15 @@ const handlePreviewMouseMove = (e: MouseEvent) => {
   if (!isResizingPreview.value || !splitPaneRef.value) return;
   const rect = splitPaneRef.value.getBoundingClientRect();
   const newWidth = rect.right - e.clientX;
+  if (newWidth < 100) {
+    isPreviewVisible.value = false;
+    stopResizingPreview();
+    previewWidth.value = 450;
+    return;
+  }
   const currentSidebar = isSidebarVisible.value ? sidebarWidth.value : 0;
-  const minWidth = 150;
-  const maxWidth = rect.width - currentSidebar - 150;
+  const minWidth = 180;
+  const maxWidth = rect.width - currentSidebar - 180;
   previewWidth.value = Math.max(minWidth, Math.min(maxWidth, newWidth));
 };
 
@@ -1424,7 +1436,7 @@ const activeFileName = computed(() => {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  min-width: 150px;
+  min-width: 180px;
   max-width: 500px;
 }
 
