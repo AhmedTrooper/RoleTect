@@ -17,20 +17,17 @@ jobs:
       matrix:
         include:
           # --- APPLE ---
-          # - platform: "macos-latest" # Apple Silicon
-          #   target: "aarch64-apple-darwin"
-          #   args: "--target aarch64-apple-darwin"
-          # - platform: "macos-13"     # Intel Mac
-          #   target: "x86_64-apple-darwin"
-          #   args: "--target x86_64-apple-darwin"
+          - platform: "macos-latest" # Apple Silicon
+            target: "aarch64-apple-darwin"
+            args: "--target aarch64-apple-darwin"
 
           # --- LINUX ---
-          # - platform: "ubuntu-22.04" # Linux x64
-          #   target: "x86_64-unknown-linux-gnu"
-          #   args: ""
-          # - platform: "ubuntu-22.04-arm" # Linux ARM64
-          #   target: "aarch64-unknown-linux-gnu"
-          #   args: ""
+          - platform: "ubuntu-22.04" # Linux x64
+            target: "x86_64-unknown-linux-gnu"
+            args: ""
+          - platform: "ubuntu-22.04-arm" # Linux ARM64
+            target: "aarch64-unknown-linux-gnu"
+            args: ""
 
           # --- WINDOWS ---
           - platform: "windows-latest" # Windows x64
@@ -102,7 +99,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: roletect-v__VERSION__
-          releaseName: "Roletect v__VERSION__"
+          releaseName: "RoleTect v__VERSION__"
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
@@ -112,7 +109,6 @@ jobs:
 
             ### 🍎 macOS
             * **Apple Silicon (M1/M2/M3/M4)**: Download the `aarch64` file (e.g., `.dmg` or `.app.tar.gz`)
-            * **Intel Mac (Older Macs)**: Download the `x64` file (e.g., `.dmg` or `.app.tar.gz`)
 
             ### 🪟 Windows
             * **Standard PC (Most Intel/AMD)**: Download the `x64` file (e.g., `-setup.exe` or `.msi`)
