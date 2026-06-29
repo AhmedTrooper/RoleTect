@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { join } from '@tauri-apps/api/path';
@@ -85,6 +85,7 @@ const isPreviewVisible = ref(true);
 const previewWidth = ref(500);
 const isResizingPreview = ref(false);
 const splitPaneRef = ref<HTMLElement | null>(null);
+const fileTreeContainerRef = ref<HTMLElement | null>(null);
 
 const pdfUrl = ref<string | null>(null);
 const pdfBytesBuffer = ref<Uint8Array | null>(null);
@@ -421,14 +422,18 @@ const selectWorkspace = async () => {
 
 const refreshFileTree = async () => {
   if (!workspacePath.value) return;
-  isLoadingWorkspace.value = true;
+  const savedScrollLeft = fileTreeContainerRef.value?.scrollLeft || 0;
+  const savedScrollTop = fileTreeContainerRef.value?.scrollTop || 0;
   try {
     // Recursively scan the directory while preserving open states
     fileTree.value = await scanDirectoryRecursive(workspacePath.value, fileTree.value);
+    await nextTick();
+    if (fileTreeContainerRef.value) {
+      fileTreeContainerRef.value.scrollLeft = savedScrollLeft;
+      fileTreeContainerRef.value.scrollTop = savedScrollTop;
+    }
   } catch (err) {
     console.error('Failed to scan workspace:', err);
-  } finally {
-    isLoadingWorkspace.value = false;
   }
 };
 
@@ -1047,7 +1052,7 @@ const activeFileName = computed(() => {
             <button class="btn-primary-sm" @click="selectWorkspace">Open Folder</button>
           </div>
 
-          <div v-else class="file-tree">
+          <div v-else class="file-tree" ref="fileTreeContainerRef">
             <div v-if="isLoadingWorkspace" class="tree-loading">
               <RotateCw :size="16" class="spinner" />
             </div>

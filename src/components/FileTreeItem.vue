@@ -284,16 +284,16 @@ const executeAction = (action: () => void) => {
 </style>
 
 <style>
-/* Global styling for teleported context menu */
+/* Global styling for teleported context menu matching global theme system */
 .context-menu {
   position: fixed;
   z-index: 99999;
-  background: var(--surface, #161923);
-  border: 1px solid var(--line, #30363d);
-  border-radius: var(--radius-md, 6px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
   padding: 4px;
   min-width: 160px;
-  box-shadow: var(--shadow, 0 8px 24px rgba(0, 0, 0, 0.4));
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -307,27 +307,27 @@ const executeAction = (action: () => void) => {
   padding: 6px 10px;
   background: none;
   border: none;
-  color: var(--ink, #e6edf3);
+  color: var(--ink);
   font-size: 0.8rem;
-  border-radius: var(--radius-sm, 4px);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
 }
 
 .context-menu-item:hover {
-  background: var(--surface-soft, #1d222e);
-  color: var(--ink, #e6edf3);
+  background: var(--surface-soft);
+  color: var(--ink);
 }
 
 .context-menu-item.item-delete:hover {
   background: rgba(248, 81, 73, 0.15);
-  color: var(--warning, #f85149);
+  color: var(--warning);
 }
 
 .context-menu-divider {
   height: 1px;
-  background: var(--line, #30363d);
+  background: var(--line);
   margin: 2px 0;
 }
 </style>
