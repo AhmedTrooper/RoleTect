@@ -415,9 +415,20 @@ const selectWorkspace = async () => {
 
     if (selected && typeof selected === 'string') {
       workspacePath.value = selected;
+      
+      // Clear previously opened standalone or cross-workspace file
+      activeFilePath.value = null;
+      isProgrammaticChange.value = true;
+      latexCode.value = '';
+
       await invoke('save_workspace_path', { path: selected });
       await refreshFileTree();
       await loadMainFile();
+
+      // Attempt to load main file automatically if one is set
+      if (mainFilePath.value && await exists(mainFilePath.value)) {
+        await selectFile({ name: mainFilePath.value.split(/[/\\]/).pop() || '', path: mainFilePath.value, isDir: false });
+      }
     }
   } catch (err) {
     console.error('Failed to select workspace:', err);
