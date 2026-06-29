@@ -65,6 +65,12 @@ interface FileItem {
 
 // State
 const workspacePath = ref<string | null>(null);
+
+const workspaceName = computed(() => {
+  if (!workspacePath.value) return '';
+  const parts = workspacePath.value.split(/[/\\]/);
+  return parts.filter(p => p).pop()?.toUpperCase() || 'EXPLORER';
+});
 const mainFilePath = ref<string | null>(null);
 const fileTree = ref<FileItem[]>([]);
 const activeFilePath = ref<string | null>(null);
@@ -978,7 +984,9 @@ const activeFileName = computed(() => {
         <!-- Sidebar File Explorer -->
         <aside v-if="isSidebarVisible" class="workspace-sidebar" :style="{ width: sidebarWidth + 'px' }">
           <div class="sidebar-header">
-            <span>EXPLORER</span>
+            <span class="workspace-title" :title="workspacePath || 'Workspace'">
+              {{ workspaceName || 'EXPLORER' }}
+            </span>
             <div class="header-tools">
               <button class="header-tool-btn" @click="refreshFileTree" title="Refresh"><RotateCw :size="16" /></button>
               <button class="header-tool-btn" @click="createNewFile()" title="New File"><Plus :size="18" /></button>
@@ -1400,6 +1408,15 @@ const activeFileName = computed(() => {
   color: var(--muted);
   letter-spacing: 0.05em;
 }
+
+.workspace-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+}
+
 
 .header-tools {
   display: flex;

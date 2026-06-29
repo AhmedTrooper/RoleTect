@@ -25,6 +25,7 @@ defineProps<{
   activeFilePath: string | null;
   mainFilePath?: string | null;
   isDiagram?: boolean;
+  level?: number;
   onToggle: (item: FileItem) => void;
   onSelect: (item: FileItem) => void;
   onSetMain?: (path: string) => void;
@@ -43,6 +44,7 @@ defineProps<{
         active: activeFilePath === item.path, 
         'main-file': mainFilePath === item.path 
       }"
+      :style="{ paddingLeft: `${((level || 0) * 12) + 12}px` }"
       @click="item.isDir ? onToggle(item) : onSelect(item)"
     >
       <div class="item-icon">
@@ -101,6 +103,7 @@ defineProps<{
           v-for="child in item.children" 
           :key="child.path"
           :item="child"
+          :level="(level || 0) + 1"
           :active-file-path="activeFilePath"
           :main-file-path="mainFilePath"
           :is-diagram="isDiagram"
@@ -205,7 +208,7 @@ defineProps<{
 }
 
 .tree-children {
-  padding-left: 12px;
+  padding-left: 0;
   overflow: hidden;
 }
 </style>
