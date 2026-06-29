@@ -168,45 +168,60 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   };
 
+  let vaultInitPromise: Promise<{ stronghold: Stronghold, store: Store }> | null = null;
+
   const getVault = async () => {
     if (strongholdInstance.value && storeInstance.value) {
       return { stronghold: strongholdInstance.value, store: storeInstance.value };
     }
 
-    const dir = await appDataDir();
-    const vaultPath = await join(dir, 'secrets.stronghold');
-    let password = await getVaultPassword();
-    let stronghold: Stronghold;
+    if (vaultInitPromise) {
+      return vaultInitPromise;
+    }
 
-    try {
-      stronghold = await Stronghold.load(vaultPath, password);
-    } catch (error) {
-      console.warn("Failed to load Stronghold, attempting reset:", error);
-      // Only reset if it's likely a password issue or corruption
-      password = generateVaultPassword();
-      const passwordPath = await join(dir, 'stronghold.pass');
-      await writeTextFile(passwordPath, password);
-      
-      if (await exists(vaultPath)) {
-        await remove(vaultPath);
+    vaultInitPromise = (async () => {
+      const dir = await appDataDir();
+      const vaultPath = await join(dir, 'secrets.stronghold');
+      let password = await getVaultPassword();
+      let stronghold: Stronghold;
+
+      try {
+        stronghold = await Stronghold.load(vaultPath, password);
+      } catch (error) {
+        console.warn("Failed to load Stronghold, attempting reset:", error);
+        // Only reset if it's likely a password issue or corruption
+        password = generateVaultPassword();
+        const passwordPath = await join(dir, 'stronghold.pass');
+        await writeTextFile(passwordPath, password);
+        
+        if (await exists(vaultPath)) {
+          await remove(vaultPath);
+        }
+        stronghold = await Stronghold.load(vaultPath, password);
       }
-      stronghold = await Stronghold.load(vaultPath, password);
-    }
 
-    let client;
+      let client;
+      try {
+        client = await stronghold.loadClient('api_client');
+      } catch {
+        client = await stronghold.createClient('api_client');
+        await stronghold.save();
+      }
+      
+      const store = client.getStore();
+      
+      strongholdInstance.value = stronghold;
+      storeInstance.value = store;
+
+      return { stronghold, store };
+    })();
+
     try {
-      client = await stronghold.loadClient('api_client');
-    } catch {
-      client = await stronghold.createClient('api_client');
-      await stronghold.save();
+      return await vaultInitPromise;
+    } catch (e) {
+      vaultInitPromise = null;
+      throw e;
     }
-    
-    const store = client.getStore();
-    
-    strongholdInstance.value = stronghold;
-    storeInstance.value = store;
-
-    return { stronghold, store };
   };
 
   const saveApiKey = async (provider: string, key: string) => {
