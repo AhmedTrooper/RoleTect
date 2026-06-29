@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { invoke } from '@tauri-apps/api/core';
 import { save, message, ask } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
-import { open } from '@tauri-apps/plugin-shell';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { Motion, AnimatePresence } from 'motion-v';
 import { useSettingsStore } from '../store/settings';
 import { useResumesStore } from '../store/resumes';
@@ -449,7 +449,7 @@ const downloadPdf = async () => {
 const openJobUrl = async () => {
   if (jobDetails.value?.job_url) {
     try {
-      await open(jobDetails.value.job_url);
+      await openUrl(jobDetails.value.job_url);
     } catch (err: any) {
       console.error("Failed to open URL:", err);
       error.value = `Failed to open URL: ${err.toString()}`;

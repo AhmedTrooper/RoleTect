@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { Motion, AnimatePresence } from "motion-v";
-import { open } from "@tauri-apps/plugin-shell";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import Titlebar from "./components/Titlebar.vue";
 import SplashLoader from "./components/SplashLoader.vue";
 import CustomDialog from "./components/CustomDialog.vue";
@@ -82,7 +82,7 @@ onMounted(() => {
 });
 
 const handleExternalClick = (url: string) => {
-    open(url).catch((err) => console.error("Failed to open URL:", err));
+    openUrl(url).catch((err: any) => console.error("Failed to open URL:", err));
 };
 </script>
 

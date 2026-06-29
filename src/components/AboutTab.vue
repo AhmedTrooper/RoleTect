@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { getName, getVersion, getTauriVersion } from '@tauri-apps/api/app';
 import { type } from '@tauri-apps/plugin-os';
 import { Code, Video, Heart, Copy, Check, ShieldCheck } from '@lucide/vue';
-import { open } from '@tauri-apps/plugin-shell';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { Motion } from 'motion-v';
 
@@ -26,7 +26,7 @@ onMounted(async () => {
 });
 
 const openLink = (url: string) => {
-  open(url).catch(err => console.error('Failed to open URL:', err));
+  openUrl(url).catch((err: any) => console.error('Failed to open URL:', err));
 };
 
 const copyIdentifier = async () => {

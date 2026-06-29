@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { open } from '@tauri-apps/plugin-shell';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -175,7 +175,7 @@ const executeAction = (action: () => void) => {
           <!-- Reveal in Explorer -->
           <button 
             class="context-menu-item" 
-            @click="executeAction(() => open(item.path))"
+            @click="executeAction(() => revealItemInDir(item.path))"
           >
             <ExternalLink :size="14" />
             <span>Reveal in System Explorer</span>

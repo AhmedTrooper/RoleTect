@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
-import { open } from '@tauri-apps/plugin-shell';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { join } from '@tauri-apps/api/path';
 import { 
   writeFile, 
@@ -454,7 +454,7 @@ const openSingleFile = async () => {
 
 const openWorkspaceInExplorer = async () => {
   if (workspacePath.value) {
-    await open(workspacePath.value);
+    await revealItemInDir(workspacePath.value);
   }
 };
 
