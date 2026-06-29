@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { open } from '@tauri-apps/plugin-shell';
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -9,7 +10,8 @@ import {
   Trash2, 
   Star,
   FileCode,
-  Pencil
+  Pencil,
+  ExternalLink
 } from '@lucide/vue';
 import { Motion, AnimatePresence } from 'motion-v';
 
@@ -168,6 +170,15 @@ const executeAction = (action: () => void) => {
           >
             <Pencil :size="14" />
             <span>Rename</span>
+          </button>
+
+          <!-- Reveal in Explorer -->
+          <button 
+            class="context-menu-item" 
+            @click="executeAction(() => open(item.path))"
+          >
+            <ExternalLink :size="14" />
+            <span>Reveal in System Explorer</span>
           </button>
 
           <!-- Delete -->

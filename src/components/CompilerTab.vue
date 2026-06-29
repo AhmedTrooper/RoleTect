@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
+import { open } from '@tauri-apps/plugin-shell';
 import { join } from '@tauri-apps/api/path';
 import { 
   writeFile, 
@@ -34,7 +35,9 @@ import {
   Info,
   Copy,
   Check,
-  PanelRight
+  PanelRight,
+  FileUp,
+  ExternalLink
 } from '@lucide/vue';
 
 import { Codemirror } from 'vue-codemirror';
@@ -418,6 +421,29 @@ const selectWorkspace = async () => {
     }
   } catch (err) {
     console.error('Failed to select workspace:', err);
+  }
+};
+
+const openSingleFile = async () => {
+  try {
+    const selected = await openDialog({
+      directory: false,
+      multiple: false,
+      title: 'Open LaTeX File',
+      filters: [{ name: 'LaTeX File', extensions: ['tex'] }]
+    });
+
+    if (selected && typeof selected === 'string') {
+      await selectFile({ name: selected.split(/[/\\]/).pop() || '', path: selected, isDir: false });
+    }
+  } catch (err) {
+    console.error('Failed to open file:', err);
+  }
+};
+
+const openWorkspaceInExplorer = async () => {
+  if (workspacePath.value) {
+    await open(workspacePath.value);
   }
 };
 
@@ -1036,21 +1062,28 @@ const activeFileName = computed(() => {
         <!-- Sidebar File Explorer -->
         <aside v-if="isSidebarVisible" class="workspace-sidebar" :style="{ width: sidebarWidth + 'px' }">
           <div class="sidebar-header">
-            <span class="workspace-title" :title="workspacePath || 'Workspace'">
-              {{ workspaceName || 'EXPLORER' }}
-            </span>
+            <div class="workspace-title-container" :title="workspacePath || 'Workspace'">
+              <span class="workspace-title">{{ workspaceName || 'EXPLORER' }}</span>
+              <span v-if="workspacePath" class="workspace-path-subtext">{{ workspacePath }}</span>
+            </div>
             <div class="header-tools">
-              <button class="header-tool-btn" @click="refreshFileTree" title="Refresh"><RotateCw :size="16" /></button>
-              <button class="header-tool-btn" @click="createNewFile()" title="New File"><Plus :size="18" /></button>
-              <button class="header-tool-btn" @click="createNewFolder()" title="New Folder"><FolderPlus :size="18" /></button>
-              <button v-if="workspacePath" @click="closeWorkspace" title="Close Workspace" class="header-tool-btn close-workspace-btn"><X :size="18" /></button>
+              <button class="header-tool-btn" @click="openSingleFile" title="Open File..."><FileUp :size="16" /></button>
+              <button class="header-tool-btn" @click="selectWorkspace" title="Open / Switch Folder..."><FolderOpen :size="16" /></button>
+              <button v-if="workspacePath" class="header-tool-btn" @click="openWorkspaceInExplorer" title="Reveal in System Explorer"><ExternalLink :size="15" /></button>
+              <button class="header-tool-btn" @click="refreshFileTree" title="Refresh"><RotateCw :size="15" /></button>
+              <button class="header-tool-btn" @click="createNewFile()" title="New File"><Plus :size="16" /></button>
+              <button class="header-tool-btn" @click="createNewFolder()" title="New Folder"><FolderPlus :size="16" /></button>
+              <button v-if="workspacePath" @click="closeWorkspace" title="Close Workspace" class="header-tool-btn close-workspace-btn"><X :size="16" /></button>
             </div>
           </div>
 
           <div v-if="!workspacePath" class="sidebar-empty">
             <FolderOpen :size="32" />
             <p>No workspace selected</p>
-            <button class="btn-primary-sm" @click="selectWorkspace">Open Folder</button>
+            <div class="empty-actions">
+              <button class="btn-primary-sm" @click="selectWorkspace">Open Folder</button>
+              <button class="btn-secondary-sm" @click="openSingleFile">Open File</button>
+            </div>
           </div>
 
           <div v-else class="file-tree" ref="fileTreeContainerRef">
@@ -1463,11 +1496,11 @@ const activeFileName = computed(() => {
 }
 
 .sidebar-header {
-  height: 32px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   font-size: 0.65rem;
@@ -1476,12 +1509,32 @@ const activeFileName = computed(() => {
   letter-spacing: 0.05em;
 }
 
-.workspace-title {
+.workspace-title-container {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  margin-right: 6px;
+}
+
+.workspace-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-right: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.workspace-path-subtext {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
 }
 
 
