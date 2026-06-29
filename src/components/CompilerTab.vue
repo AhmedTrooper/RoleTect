@@ -32,12 +32,12 @@ import {
   Save,
   Layout,
   BookOpen,
-  Info,
   Copy,
   Check,
   PanelRight,
   FileUp,
-  ExternalLink
+  ExternalLink,
+  Zap
 } from '@lucide/vue';
 
 import { Codemirror } from 'vue-codemirror';
@@ -943,14 +943,13 @@ const activeFileName = computed(() => {
         <div class="divider-v"></div>
 
         <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'auto-compile'" @mouseleave="activeTooltip = null">
-          <label class="auto-compile-toggle">
-            <input 
-              type="checkbox" 
-              :checked="settingsStore.isAutoCompileEnabled"
-              @change="settingsStore.setAutoCompile(($event.target as HTMLInputElement).checked)"
-            >
-            <Info :size="12" class="info-icon" />
-          </label>
+          <button 
+            class="action-btn auto-compile-btn" 
+            :class="{ active: settingsStore.isAutoCompileEnabled }"
+            @click="settingsStore.setAutoCompile(!settingsStore.isAutoCompileEnabled)"
+          >
+            <Zap :size="16" />
+          </button>
           <AnimatePresence>
             <Motion
               v-if="activeTooltip === 'auto-compile'"
@@ -960,7 +959,7 @@ const activeFileName = computed(() => {
               :transition="{ duration: 0.15 }"
               class="floating-message tooltip-bottom-left"
             >
-              Auto Compile on Blur
+              {{ settingsStore.isAutoCompileEnabled ? 'Auto Compile: Enabled' : 'Auto Compile: Disabled' }}
             </Motion>
           </AnimatePresence>
         </div>
@@ -1062,18 +1061,21 @@ const activeFileName = computed(() => {
         <!-- Sidebar File Explorer -->
         <aside v-if="isSidebarVisible" class="workspace-sidebar" :style="{ width: sidebarWidth + 'px' }">
           <div class="sidebar-header">
-            <div class="workspace-title-container" :title="workspacePath || 'Workspace'">
-              <span class="workspace-title">{{ workspaceName || 'EXPLORER' }}</span>
+            <div class="sidebar-header-top" :title="workspacePath || 'Workspace'">
+              <div class="workspace-name-row">
+                <FolderOpen :size="14" class="workspace-folder-icon" />
+                <span class="workspace-title">{{ workspaceName || 'EXPLORER' }}</span>
+                <button v-if="workspacePath" @click="closeWorkspace" title="Close Workspace" class="close-workspace-btn"><X :size="14" /></button>
+              </div>
               <span v-if="workspacePath" class="workspace-path-subtext">{{ workspacePath }}</span>
             </div>
-            <div class="header-tools">
-              <button class="header-tool-btn" @click="openSingleFile" title="Open File..."><FileUp :size="16" /></button>
-              <button class="header-tool-btn" @click="selectWorkspace" title="Open / Switch Folder..."><FolderOpen :size="16" /></button>
-              <button v-if="workspacePath" class="header-tool-btn" @click="openWorkspaceInExplorer" title="Reveal in System Explorer"><ExternalLink :size="15" /></button>
-              <button class="header-tool-btn" @click="refreshFileTree" title="Refresh"><RotateCw :size="15" /></button>
-              <button class="header-tool-btn" @click="createNewFile()" title="New File"><Plus :size="16" /></button>
-              <button class="header-tool-btn" @click="createNewFolder()" title="New Folder"><FolderPlus :size="16" /></button>
-              <button v-if="workspacePath" @click="closeWorkspace" title="Close Workspace" class="header-tool-btn close-workspace-btn"><X :size="16" /></button>
+            <div class="sidebar-header-tools">
+              <button class="header-tool-btn" @click="openSingleFile" title="Open File..."><FileUp :size="14" /></button>
+              <button class="header-tool-btn" @click="selectWorkspace" title="Open / Switch Folder..."><FolderOpen :size="14" /></button>
+              <button v-if="workspacePath" class="header-tool-btn" @click="openWorkspaceInExplorer" title="Reveal in System Explorer"><ExternalLink :size="14" /></button>
+              <button class="header-tool-btn" @click="refreshFileTree" title="Refresh"><RotateCw :size="14" /></button>
+              <button class="header-tool-btn" @click="createNewFile()" title="New File"><Plus :size="14" /></button>
+              <button class="header-tool-btn" @click="createNewFolder()" title="New Folder"><FolderPlus :size="14" /></button>
             </div>
           </div>
 
@@ -1350,22 +1352,9 @@ const activeFileName = computed(() => {
   margin: 0 4px;
 }
 
-.auto-compile-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.auto-compile-toggle input {
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-  accent-color: var(--accent);
-}
-
-.info-icon {
-  color: var(--muted);
+.auto-compile-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .action-btn {
@@ -1496,35 +1485,60 @@ const activeFileName = computed(() => {
 }
 
 .sidebar-header {
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--muted);
-  letter-spacing: 0.05em;
-}
-
-.workspace-title-container {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px 6px 10px;
+  gap: 6px;
+}
+
+.sidebar-header-top {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   overflow: hidden;
-  margin-right: 6px;
+}
+
+.workspace-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.workspace-folder-icon {
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .workspace-title {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--ink);
+  letter-spacing: 0.03em;
+}
+
+.close-workspace-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.close-workspace-btn:hover {
+  color: var(--warning) !important;
+  background: rgba(248, 81, 73, 0.1);
 }
 
 .workspace-path-subtext {
@@ -1534,13 +1548,16 @@ const activeFileName = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
-
-.header-tools {
+.sidebar-header-tools {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line-soft, rgba(255,255,255,0.05));
 }
 
 .header-tool-btn {
