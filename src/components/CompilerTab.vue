@@ -1789,10 +1789,14 @@ const activeFileName = computed(() => {
 
 .pdf-viewer {
   flex: 1;
-  background: #525659;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
 }
 
 .pdf-viewer iframe {
+  display: block;
   width: 100%;
   height: 100%;
   border: none;
