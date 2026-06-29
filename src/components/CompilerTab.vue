@@ -284,11 +284,10 @@ const startResizing = (_e: MouseEvent) => {
 };
 
 const handleMouseMove = (e: MouseEvent) => {
-  if (!isResizing.value) return;
-  const newWidth = e.clientX;
-  if (newWidth > 150 && newWidth < 500) {
-    sidebarWidth.value = newWidth;
-  }
+  if (!isResizing.value || !splitPaneRef.value) return;
+  const rect = splitPaneRef.value.getBoundingClientRect();
+  const newWidth = e.clientX - rect.left;
+  sidebarWidth.value = Math.max(150, Math.min(500, newWidth));
 };
 
 const stopResizing = () => {
@@ -312,11 +311,9 @@ const handlePreviewMouseMove = (e: MouseEvent) => {
   const rect = splitPaneRef.value.getBoundingClientRect();
   const newWidth = rect.right - e.clientX;
   const currentSidebar = isSidebarVisible.value ? sidebarWidth.value : 0;
-  const minWidth = 200;
-  const maxWidth = rect.width - currentSidebar - 200;
-  if (newWidth >= minWidth && newWidth <= maxWidth) {
-    previewWidth.value = newWidth;
-  }
+  const minWidth = 150;
+  const maxWidth = rect.width - currentSidebar - 150;
+  previewWidth.value = Math.max(minWidth, Math.min(maxWidth, newWidth));
 };
 
 const stopResizingPreview = () => {
@@ -1017,7 +1014,7 @@ const activeFileName = computed(() => {
     </header>
 
     <main class="compiler-main">
-      <div class="split-pane" ref="splitPaneRef">
+      <div class="split-pane" ref="splitPaneRef" :class="{ 'is-resizing': isResizing || isResizingPreview }">
         <!-- Sidebar File Explorer -->
         <aside v-if="isSidebarVisible" class="workspace-sidebar" :style="{ width: sidebarWidth + 'px' }">
           <div class="sidebar-header">
@@ -1410,6 +1407,15 @@ const activeFileName = computed(() => {
   display: flex;
   min-height: 0;
   position: relative;
+}
+
+.split-pane.is-resizing iframe {
+  pointer-events: none !important;
+}
+
+.split-pane.is-resizing {
+  user-select: none !important;
+  cursor: col-resize !important;
 }
 
 .workspace-sidebar {
