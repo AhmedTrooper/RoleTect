@@ -216,6 +216,8 @@ const executeAction = (action: () => void) => {
 .tree-item-wrapper {
   display: flex;
   flex-direction: column;
+  min-width: 100%;
+  width: max-content;
 }
 
 .tree-item {
@@ -227,6 +229,9 @@ const executeAction = (action: () => void) => {
   transition: 0.1s;
   position: relative;
   user-select: none;
+  min-width: 100%;
+  width: max-content;
+  box-sizing: border-box;
 }
 
 .tree-item:hover {

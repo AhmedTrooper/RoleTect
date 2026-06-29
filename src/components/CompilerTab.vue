@@ -1532,6 +1532,7 @@ const activeFileName = computed(() => {
 .file-tree {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto;
   padding: 8px 0;
 }
 
