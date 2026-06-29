@@ -33,7 +33,8 @@ import {
   BookOpen,
   Info,
   Copy,
-  Check
+  Check,
+  PanelRight
 } from '@lucide/vue';
 
 import { Codemirror } from 'vue-codemirror';
@@ -79,6 +80,11 @@ const latexCode = ref('');
 const isSidebarVisible = ref(true);
 const sidebarWidth = ref(240);
 const isResizing = ref(false);
+
+const isPreviewVisible = ref(true);
+const previewWidth = ref(500);
+const isResizingPreview = ref(false);
+const splitPaneRef = ref<HTMLElement | null>(null);
 
 const pdfUrl = ref<string | null>(null);
 const pdfBytesBuffer = ref<Uint8Array | null>(null);
@@ -289,6 +295,34 @@ const stopResizing = () => {
   isResizing.value = false;
   document.removeEventListener('mousemove', handleMouseMove);
   document.removeEventListener('mouseup', stopResizing);
+};
+
+const togglePreview = () => {
+  isPreviewVisible.value = !isPreviewVisible.value;
+};
+
+const startResizingPreview = (_e: MouseEvent) => {
+  isResizingPreview.value = true;
+  document.addEventListener('mousemove', handlePreviewMouseMove);
+  document.addEventListener('mouseup', stopResizingPreview);
+};
+
+const handlePreviewMouseMove = (e: MouseEvent) => {
+  if (!isResizingPreview.value || !splitPaneRef.value) return;
+  const rect = splitPaneRef.value.getBoundingClientRect();
+  const newWidth = rect.right - e.clientX;
+  const currentSidebar = isSidebarVisible.value ? sidebarWidth.value : 0;
+  const minWidth = 200;
+  const maxWidth = rect.width - currentSidebar - 200;
+  if (newWidth >= minWidth && newWidth <= maxWidth) {
+    previewWidth.value = newWidth;
+  }
+};
+
+const stopResizingPreview = () => {
+  isResizingPreview.value = false;
+  document.removeEventListener('mousemove', handlePreviewMouseMove);
+  document.removeEventListener('mouseup', stopResizingPreview);
 };
 
 const setMainFile = async (path: string) => {
@@ -836,6 +870,9 @@ const activeFileName = computed(() => {
         <button class="toggle-sidebar-btn" @click="toggleSidebar" title="Toggle Sidebar">
           <Layout :size="18" />
         </button>
+        <button class="toggle-sidebar-btn" @click="togglePreview" title="Toggle PDF Preview">
+          <PanelRight :size="18" />
+        </button>
         <Files :size="20" class="header-icon" />
         <h1>LaTeX IDE</h1>
         <span v-if="workspacePath" class="workspace-label">
@@ -980,7 +1017,7 @@ const activeFileName = computed(() => {
     </header>
 
     <main class="compiler-main">
-      <div class="split-pane">
+      <div class="split-pane" ref="splitPaneRef">
         <!-- Sidebar File Explorer -->
         <aside v-if="isSidebarVisible" class="workspace-sidebar" :style="{ width: sidebarWidth + 'px' }">
           <div class="sidebar-header">
@@ -1085,8 +1122,11 @@ const activeFileName = computed(() => {
           </div>
         </section>
 
+        <!-- Preview Resizer -->
+        <div v-if="isPreviewVisible" class="preview-resizer" @mousedown="startResizingPreview"></div>
+
         <!-- Preview Section -->
-        <section class="preview-section">
+        <section v-if="isPreviewVisible" class="preview-section" :style="{ width: previewWidth + 'px', flex: 'none' }">
           <!-- Loading Overlay (Scoped to Preview) -->
           <AnimatePresence>
             <Motion
@@ -1382,16 +1422,18 @@ const activeFileName = computed(() => {
   max-width: 500px;
 }
 
-.sidebar-resizer {
+.sidebar-resizer, .preview-resizer {
   width: 4px;
   cursor: col-resize;
   background: transparent;
   transition: background 0.2s;
   z-index: 10;
   margin-left: -2px;
+  margin-right: -2px;
 }
 
-.sidebar-resizer:hover, .sidebar-resizer:active {
+.sidebar-resizer:hover, .sidebar-resizer:active,
+.preview-resizer:hover, .preview-resizer:active {
   background: var(--accent);
 }
 
@@ -1579,8 +1621,8 @@ const activeFileName = computed(() => {
   position: relative;
 }
 
-.editor-section {
-  border-right: 1px solid var(--line);
+.preview-section {
+  border-left: 1px solid var(--line);
 }
 
 .pane-header {
