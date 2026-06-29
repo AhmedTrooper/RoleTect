@@ -17,20 +17,20 @@ jobs:
       matrix:
         include:
           # --- APPLE ---
-          - platform: "macos-latest" # Apple Silicon
-            target: "aarch64-apple-darwin"
-            args: "--target aarch64-apple-darwin"
-          - platform: "macos-13"     # Intel Mac
-            target: "x86_64-apple-darwin"
-            args: "--target x86_64-apple-darwin"
+          # - platform: "macos-latest" # Apple Silicon
+          #   target: "aarch64-apple-darwin"
+          #   args: "--target aarch64-apple-darwin"
+          # - platform: "macos-13"     # Intel Mac
+          #   target: "x86_64-apple-darwin"
+          #   args: "--target x86_64-apple-darwin"
 
           # --- LINUX ---
-          - platform: "ubuntu-22.04" # Linux x64
-            target: "x86_64-unknown-linux-gnu"
-            args: ""
-          - platform: "ubuntu-22.04-arm" # Linux ARM64
-            target: "aarch64-unknown-linux-gnu"
-            args: ""
+          # - platform: "ubuntu-22.04" # Linux x64
+          #   target: "x86_64-unknown-linux-gnu"
+          #   args: ""
+          # - platform: "ubuntu-22.04-arm" # Linux ARM64
+          #   target: "aarch64-unknown-linux-gnu"
+          #   args: ""
 
           # --- WINDOWS ---
           - platform: "windows-latest" # Windows x64
