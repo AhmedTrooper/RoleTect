@@ -86,6 +86,7 @@ const previewWidth = ref(500);
 const isResizingPreview = ref(false);
 const splitPaneRef = ref<HTMLElement | null>(null);
 const fileTreeContainerRef = ref<HTMLElement | null>(null);
+const compilerContainerRef = ref<HTMLElement | null>(null);
 
 const pdfUrl = ref<string | null>(null);
 const pdfBytesBuffer = ref<Uint8Array | null>(null);
@@ -878,7 +879,7 @@ const activeFileName = computed(() => {
 </script>
 
 <template>
-  <div class="compiler-container">
+  <div class="compiler-container" ref="compilerContainerRef">
     <header class="compiler-header">
       <div class="header-left">
         <button class="toggle-sidebar-btn" @click="toggleSidebar" title="Toggle Sidebar">
@@ -1111,28 +1112,6 @@ const activeFileName = computed(() => {
               @blur="handleBlur"
               class="latex-editor-cm"
             />
-
-            <AnimatePresence>
-              <Motion 
-                v-if="latexCode"
-                class="refinement-bar"
-                drag
-                :drag-constraints="editorContainer || undefined"
-                :drag-elastic="0.1"
-                :initial="{ opacity: 0, y: -10, x: '-50%' }"
-                :animate="{ opacity: 1, y: 0, x: '-50%' }"
-                :exit="{ opacity: 0, y: -10, x: '-50%' }"
-              >
-                <input 
-                  v-model="refinementInstruction" 
-                  placeholder="Refine code (e.g. 'Add a table of contents')..."
-                  @keyup.enter="refineWithAi"
-                />
-                <button @click="refineWithAi" :disabled="isRefining">
-                  {{ isRefining ? '...' : '→' }}
-                </button>
-              </Motion>
-            </AnimatePresence>
           </div>
         </section>
 
@@ -1204,6 +1183,29 @@ const activeFileName = computed(() => {
         </Motion>
       </AnimatePresence>
     </main>
+
+    <!-- Floating Refinement AI Bar (Draggable across entire workspace) -->
+    <AnimatePresence>
+      <Motion 
+        v-if="latexCode"
+        class="refinement-bar"
+        drag
+        :drag-constraints="compilerContainerRef || undefined"
+        :drag-elastic="0.05"
+        :initial="{ opacity: 0, y: -10, x: '-50%' }"
+        :animate="{ opacity: 1, y: 0, x: '-50%' }"
+        :exit="{ opacity: 0, y: -10, x: '-50%' }"
+      >
+        <input 
+          v-model="refinementInstruction" 
+          placeholder="Refine code (e.g. 'Add a table of contents')..."
+          @keyup.enter="refineWithAi"
+        />
+        <button @click="refineWithAi" :disabled="isRefining">
+          {{ isRefining ? '...' : '→' }}
+        </button>
+      </Motion>
+    </AnimatePresence>
 
     <!-- Template Modal -->
     <AnimatePresence>
@@ -1748,7 +1750,7 @@ const activeFileName = computed(() => {
 
 .refinement-bar {
   position: absolute;
-  top: 16px;
+  top: 50px;
   left: 50%;
   width: 90%;
   max-width: 440px;
@@ -1757,8 +1759,13 @@ const activeFileName = computed(() => {
   border-radius: 20px;
   display: flex;
   padding: 4px 14px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  z-index: 20;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 1000;
+  cursor: grab;
+}
+
+.refinement-bar:active {
+  cursor: grabbing;
 }
 
 .refinement-bar input {
@@ -1769,6 +1776,7 @@ const activeFileName = computed(() => {
   font-size: 0.75rem;
   padding: 8px 0;
   outline: none;
+  cursor: text;
 }
 
 .refinement-bar button {
