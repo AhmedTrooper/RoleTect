@@ -1554,8 +1554,8 @@ const activeFileName = computed(() => {
 .sidebar-header-tools {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 2px;
+  justify-content: flex-start;
+  gap: 4px;
   padding-top: 4px;
   border-top: 1px solid var(--line-soft, rgba(255,255,255,0.05));
 }
@@ -1565,7 +1565,9 @@ const activeFileName = computed(() => {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  padding: 4px;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -1595,6 +1597,12 @@ const activeFileName = computed(() => {
   margin: 0;
 }
 
+.empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .btn-primary-sm {
   background: var(--accent);
   color: white;
@@ -1604,6 +1612,22 @@ const activeFileName = computed(() => {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.btn-secondary-sm {
+  background: var(--surface-soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-secondary-sm:hover {
+  background: var(--surface);
 }
 
 .file-tree {
