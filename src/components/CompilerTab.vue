@@ -787,39 +787,50 @@ const compilePdf = async () => {
 
     let pdfBytes: number[];
     
-    if (workspacePath.value) {
-      // Determine what to compile: 
-      // 1. If active file is a .tex file, compile it.
-      // 2. Otherwise, fallback to the designated Main File.
-      let compileTarget = activeFilePath.value;
-      if (compileTarget && !compileTarget.toLowerCase().endsWith('.tex')) {
-        await dialog.showAlert(
-          `The active file "${compileTarget.split(/[/\\\\]/).pop()}" is not a LaTeX (.tex) file. Only .tex files can be compiled.`,
-          'Compilation Blocked'
-        );
-        return;
-      }
+    let compileTarget = activeFilePath.value;
+    if (compileTarget && !compileTarget.toLowerCase().endsWith('.tex')) {
+      await dialog.showAlert(
+        `The active file "${compileTarget.split(/[/\\\\]/).pop()}" is not a LaTeX (.tex) file. Only .tex files can be compiled.`,
+        'Compilation Blocked'
+      );
+      return;
+    }
 
-      if (!compileTarget) {
-        compileTarget = mainFilePath.value;
-      }
-      
-      if (!compileTarget) {
-        throw new Error("No .tex file selected or designated as main to compile.");
-      }
+    if (!compileTarget && workspacePath.value) {
+      compileTarget = mainFilePath.value;
+    }
 
-      let relativePath = compileTarget.replace(workspacePath.value, '');
-      if (relativePath.startsWith('/') || relativePath.startsWith('\\')) {
-        relativePath = relativePath.substring(1);
+    if (compileTarget) {
+      let targetWorkspace = workspacePath.value;
+      let relativePath = '';
+
+      if (targetWorkspace && compileTarget.startsWith(targetWorkspace)) {
+        // File is inside the current workspace
+        relativePath = compileTarget.substring(targetWorkspace.length);
+        if (relativePath.startsWith('/') || relativePath.startsWith('\\')) {
+          relativePath = relativePath.substring(1);
+        }
+      } else {
+        // File is outside the workspace OR no workspace is open
+        // Use the file's parent directory as its isolated workspace context
+        const lastSlash = Math.max(compileTarget.lastIndexOf('/'), compileTarget.lastIndexOf('\\'));
+        targetWorkspace = compileTarget.substring(0, lastSlash);
+        relativePath = compileTarget.substring(lastSlash + 1);
       }
 
       pdfBytes = await invoke<number[]>('compile_workspace_to_pdf', { 
-        workspaceDir: workspacePath.value,
+        workspaceDir: targetWorkspace,
         mainFileName: relativePath
       });
-      await refreshFileTree();
+      
+      if (workspacePath.value) {
+        await refreshFileTree();
+      }
     } else {
-      // Standalone string compilation
+      // True standalone string compilation (scratchpad mode)
+      if (!latexCode.value.trim()) {
+        throw new Error("No .tex file selected and no content to compile.");
+      }
       pdfBytes = await invoke<number[]>('compile_resume_to_pdf', { 
         latexCode: latexCode.value 
       });
