@@ -84,7 +84,7 @@ jobs:
           
           # Installs required C++ libraries for the Tectonic crate.
           # Note: sqlite3 is intentionally omitted here because rusqlite handles it via the "bundled" Cargo feature.
-          ${{ github.workspace }}\vcpkg\vcpkg.exe install icu:${{ matrix.vcpkg_triplet }} libpng:${{ matrix.vcpkg_triplet }} harfbuzz:${{ matrix.vcpkg_triplet }} graphite2:${{ matrix.vcpkg_triplet }} fontconfig:${{ matrix.vcpkg_triplet }}
+          ${{ github.workspace }}\vcpkg\vcpkg.exe install icu:${{ matrix.vcpkg_triplet }} libpng:${{ matrix.vcpkg_triplet }} harfbuzz[graphite2]:${{ matrix.vcpkg_triplet }} graphite2:${{ matrix.vcpkg_triplet }} fontconfig:${{ matrix.vcpkg_triplet }}
 
           echo "TECTONIC_DEP_BACKEND=vcpkg" >> $env:GITHUB_ENV
           echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
