@@ -105,74 +105,157 @@ const activeTooltip = ref<string | null>(null);
 
 const resumeTemplates = [
   {
-    name: 'Surgical Professional',
-    description: 'Clean, high-density layout optimized for ATS.',
-    content: `\\documentclass[11pt,a4paper]{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage[margin=1in]{geometry}
-\\usepackage{titlesec}
-\\usepackage{enumitem}
-\\usepackage{hyperref}
+    name: 'Initial Cacher',
+    description: 'Run this to download and cache 85+ major scientific packages.',
+    content: `\\documentclass[12pt, a4paper]{article}
 
-\\titleformat{\\section}{\\large\\bfseries}{}{0em}{}[\\titlerule]
-\\titlespacing{\\section}{0pt}{12pt}{8pt}
+% ==========================================
+% 1. CORE ENGINE & TYPOGRAPHY
+% ==========================================
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage[english]{babel}
+\\usepackage{lmodern}
+\\usepackage{microtype}
+\\usepackage{setspace}
+\\usepackage{xparse}
+\\usepackage{etoolbox}
+
+% ==========================================
+% 2. MATHEMATICS & THEOREMS
+% ==========================================
+\\usepackage{amsmath}
+\\usepackage{amssymb}
+\\usepackage{amsfonts}
+\\usepackage{amsthm}
+\\usepackage{mathtools}
+\\usepackage{bm}
+\\usepackage{esint}
+\\usepackage{cancel}
+\\usepackage{mathrsfs}
+\\usepackage{thmtools}
+
+% ==========================================
+% 3. PHYSICS, CHEMISTRY, & ENGINEERING
+% ==========================================
+\\usepackage{siunitx}
+\\usepackage{physics}
+\\usepackage{mhchem}
+\\usepackage{chemfig}
+\\usepackage{circuitikz}
+\\usepackage{bohr}
+\\usepackage{modiagram}
+
+% ==========================================
+% 4. COMPUTER SCIENCE & LOGIC
+% ==========================================
+\\usepackage{listings}
+\\usepackage{algorithm}
+\\usepackage{algpseudocode}
+\\usepackage{qtree}
+\\usepackage{bussproofs}
+\\usepackage{bytefield}
+
+% ==========================================
+% 5. GRAPHICS, PLOTS, & DRAWING
+% ==========================================
+\\usepackage{graphicx}
+\\usepackage{xcolor}
+\\usepackage{tikz}
+\\usetikzlibrary{shapes, arrows, positioning, calc}
+\\usepackage{pgfplots}
+\\pgfplotsset{compat=1.18}
+\\usepackage{float}
+\\usepackage{wrapfig}
+\\usepackage{caption}
+\\usepackage{subcaption}
+\\usepackage{adjustbox}
+\\usepackage{transparent}
+
+% ==========================================
+% 6. TABLES & DATA HANDLING
+% ==========================================
+\\usepackage{booktabs}
+\\usepackage{multirow}
+\\usepackage{tabularx}
+\\usepackage{array}
+\\usepackage{longtable}
+\\usepackage{makecell}
+\\usepackage{dcolumn}
+\\usepackage{pdflscape}
+
+% ==========================================
+% 7. PAGE LAYOUT & FORMATTING
+% ==========================================
+\\usepackage{geometry}
+\\usepackage{fancyhdr}
+\\usepackage{enumitem}
+\\usepackage{multicol}
+\\usepackage{parskip}
+\\usepackage{titlesec}
+\\usepackage{tocloft}
+\\usepackage{emptypage}
+\\usepackage{anyfontsize}
+\\usepackage{lettrine}
+
+% ==========================================
+% 8. UTILITIES, DRAFTS, & ANNOTATIONS
+% ==========================================
+\\usepackage{tcolorbox}
+\\usepackage{pdfpages}
+\\usepackage{lipsum}
+\\usepackage{blindtext}
+\\usepackage{csquotes}
+\\usepackage{todonotes}
+\\usepackage{appendix}
+\\usepackage{epigraph}
+\\usepackage{soul}
+\\usepackage{lineno}
+\\usepackage{gitinfo2}
+
+% ==========================================
+% 9. BIBLIOGRAPHY & REFERENCING
+% ==========================================
+% (Note: Using natbib as it is the most robust legacy standard. 
+% If you use biblatex in the future, it will just download separately).
+\\usepackage[numbers]{natbib} 
+\\usepackage{url}
+
+% ==========================================
+% 10. HYPERLINKS & CROSS-REFERENCING
+% (CRITICAL: These must be loaded last!)
+% ==========================================
+\\usepackage{hyperref}
+\\usepackage{bookmark}
+\\usepackage{cleveref} 
 
 \\begin{document}
-\\begin{center}
-    {\\huge \\textbf{YOUR NAME}} \\\\
-    \\vspace{4pt}
-    City, Country | +1 234 567 890 | \\href{mailto:email@example.com}{email@example.com} \\\\
-    \\href{https://linkedin.com/in/username}{linkedin.com/in/username} | \\href{https://github.com/username}{github.com/username}
-\\end{center}
 
-\\section{Professional Summary}
-Expert software engineer with 5+ years of experience in building scalable web applications. Proficient in Rust, TypeScript, and cloud architecture.
+\\section*{The Ultimate Cache is Complete}
+If you are looking at this PDF, congratulations! Your LaTeX distribution has successfully reached out to the servers and downloaded the underlying files for over 80 major scientific packages, plus all of their background dependencies. 
 
-\\section{Experience}
-\\textbf{Senior Software Engineer} | Tech Corp \\hfill 2020 -- Present \\\\
-\\begin{itemize}[noitemsep,topsep=0pt]
-    \\item Led the development of a high-performance data processing engine using Rust.
-    \\item Reduced latency by 40% by implementing efficient caching strategies.
+\\subsection*{What is now on your hard drive?}
+\\begin{itemize}
+    \\item \\textbf{Math \\& Physics:} Advanced symbols, integral formatting, vector notations, and SI unit alignment.
+    \\item \\textbf{Chemistry:} Molecule drawing environments, orbital diagrams, and chemical equation parsers.
+    \\item \\textbf{Engineering \\& CS:} Circuit drawing tools, algorithmic pseudocode environments, and code-block highlighters.
+    \\item \\textbf{Formatting:} Professional table rules, landscape pages, sub-figures, and vector graphic generators (TikZ).
 \\end{itemize}
 
-\\section{Education}
-\\textbf{B.S. Computer Science} | University of Technology \\hfill 2016 -- 2020
-
-\\section{Skills}
-\\textbf{Languages:} Rust, TypeScript, Python, C++ \\\\
-\\textbf{Frameworks:} Vue.js, Node.js, Express, Tauri \\\\
-\\textbf{Tools:} Docker, Kubernetes, AWS, Git
+\\vspace{1cm}
+\\begin{center}
+    \\textbf{Reminder:} Do not use this massive file as your actual writing template. Loading all 80+ packages into a standard 5-page homework assignment will make your compilation times terribly slow. Just load what you need from now on—they are cached and waiting for you!
+\\end{center}
 
 \\end{document}`
   },
   {
     name: 'Modern Minimal',
-    description: 'A sleek, minimalist design with plenty of whitespace.',
-    content: `\\documentclass[10pt]{article}
-\\usepackage[margin=1.2in]{geometry}
-\\usepackage{xcolor}
-\\usepackage{sectsty}
-
-\\definecolor{accent}{HTML}{238636}
-\\sectionfont{\\color{accent}}
+    description: 'A sleek, minimalist design with zero extra packages to download.',
+    content: `\\documentclass{article}
 
 \\begin{document}
-{\\huge \\textbf{YOUR NAME}} \\\\
-\\textit{Software Architect}
-
-\\vspace{20pt}
-
-\\section*{Contact}
-email@example.com \\\\
-+1 234 567 890 \\\\
-github.com/username
-
-\\section*{Profile}
-Dedicated architect focusing on performance and user-centric design.
-
-\\section*{Core Stack}
-Rust, Go, TypeScript, PostgreSQL
-
+Hello World!
 \\end{document}`
   }
 ];
