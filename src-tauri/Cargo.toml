@@ -45,6 +45,7 @@ rig-bedrock = "0.38.1"
 aws-config = "1.8.5"
 aws-sdk-bedrockruntime = "1.124.0"
 tauri-plugin-localhost = "2.3.2"
+tokio-util = "0.7.18"
 
 
 [profile.dev.package.rust-argon2]

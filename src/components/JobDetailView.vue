@@ -96,7 +96,7 @@ const editorContainer = ref<HTMLElement | null>(null);
 const resumeSelectedId = ref<string | null>(null);
 const resumeInstruction = ref('');
 const resumeLatex = ref('');
-const resumePdfUrl = ref<string | null>(null);
+const resumePdfUrl = ref<any>(null);
 const resumePdfBytes = ref<Uint8Array | null>(null);
 const resumeCompError = ref<string | null>(null);
 
@@ -104,7 +104,7 @@ const resumeCompError = ref<string | null>(null);
 const clSelectedId = ref<string | null>(null);
 const clInstruction = ref('');
 const clLatex = ref('');
-const clPdfUrl = ref<string | null>(null);
+const clPdfUrl = ref<any>(null);
 const clPdfBytes = ref<Uint8Array | null>(null);
 const clCompError = ref<string | null>(null);
 
@@ -348,21 +348,21 @@ const compilePdf = async () => {
     
     const bytes = new Uint8Array(pdfBytes);
     
-    // Create a blob URL for the PDF so vue-pdf-embed can render it directly
-    const assetUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    // Fetch port from DB
+    const port = await invoke<string>('get_setting', { key: 'active_server_port', default_value: '1420' });
+    const sourceObj = {
+      url: `http://127.0.0.1:${port}/static-pdf/output.pdf?cache-bust=${Date.now()}`,
+      disableRange: false,
+      disableStream: false,
+      rangeChunkSize: 1024 * 1024 // 1MB chunks
+    };
     
     if (activeMode.value === 'resume') {
       resumePdfBytes.value = bytes;
-      if (resumePdfUrl.value && resumePdfUrl.value.startsWith('blob:')) {
-        URL.revokeObjectURL(resumePdfUrl.value);
-      }
-      resumePdfUrl.value = assetUrl;
+      resumePdfUrl.value = sourceObj;
     } else {
       clPdfBytes.value = bytes;
-      if (clPdfUrl.value && clPdfUrl.value.startsWith('blob:')) {
-        URL.revokeObjectURL(clPdfUrl.value);
-      }
-      clPdfUrl.value = assetUrl;
+      clPdfUrl.value = sourceObj;
     }
 
     await saveLatexContent(true); // Silent save after successful compilation
@@ -372,6 +372,16 @@ const compilePdf = async () => {
     error.value = "LaTeX Compilation Failed. You can try 'AI Fix' or manually edit and Save.";
   } finally {
     isCompilingPDF.value = false;
+  }
+};
+
+const onPdfError = (err: any) => {
+  console.error("PDF Rendering Error:", err);
+  const errMsg = "Frontend Rendering Error: Failed to stream or parse PDF chunks from the backend. " + (err.message || err.toString());
+  if (activeMode.value === 'resume') {
+    resumeCompError.value = errMsg;
+  } else {
+    clCompError.value = errMsg;
   }
 };
 
@@ -1021,7 +1031,7 @@ const deleteJob = async () => {
           <div v-if="activePdfUrl" class="preview-resizer" @mousedown="startResizingPreview"></div>
 
           <div v-if="activePdfUrl" class="pdf-viewer" :style="{ width: previewWidth + 'px', flex: 'none' }">
-            <VuePdfEmbed :source="activePdfUrl" class="pdf-embed-component" />
+            <VuePdfEmbed :source="activePdfUrl" class="pdf-embed-component" @error="onPdfError" />
           </div>
         </div>
       </div>

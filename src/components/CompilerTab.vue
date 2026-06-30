@@ -92,7 +92,7 @@ const splitPaneRef = ref<HTMLElement | null>(null);
 const fileTreeContainerRef = ref<HTMLElement | null>(null);
 const compilerContainerRef = ref<HTMLElement | null>(null);
 
-const pdfUrl = ref<string | null>(null);
+const pdfUrl = ref<any>(null);
 const pdfBytesBuffer = ref<Uint8Array | null>(null);
 const isCompiling = ref(false);
 const isFixing = ref(false);
@@ -405,6 +405,7 @@ onMounted(async () => {
 });
 
 onUnmounted(async () => {
+  pdfUrl.value = null; // Reset on unmount
   if (isDirty.value && settingsStore.isAutoCompileEnabled) {
     await saveActiveFile();
   }
@@ -848,22 +849,30 @@ const compilePdf = async () => {
     }
     
     pdfBytesBuffer.value = new Uint8Array(pdfBytes);
-    const blob = new Blob([pdfBytesBuffer.value], { type: 'application/pdf' });
     
-    // Clean up previous URL if it was a blob URL
-    if (pdfUrl.value && pdfUrl.value.startsWith('blob:')) {
-      URL.revokeObjectURL(pdfUrl.value);
-    }
+    // Fetch port from DB
+    const port = await invoke<string>('get_setting', { key: 'active_server_port', default_value: '1420' });
     
-    // Create a blob URL for the PDF so vue-pdf-embed can render it directly
-    // This avoids cross-origin fetch issues and the need for asset protocol
-    pdfUrl.value = URL.createObjectURL(blob);
+    // Pass configuration object to vue-pdf-embed for chunking
+    pdfUrl.value = {
+      url: `http://127.0.0.1:${port}/static-pdf/output.pdf?cache-bust=${Date.now()}`,
+      disableRange: false,
+      disableStream: false,
+      rangeChunkSize: 1024 * 1024 // 1MB chunks
+    };
+    
+    compilationError.value = null;
   } catch (err: any) {
     console.error("Compilation Error:", err);
     compilationError.value = err.message || err.toString();
   } finally {
     isCompiling.value = false;
   }
+};
+
+const onPdfError = (err: any) => {
+  console.error("PDF Rendering Error:", err);
+  compilationError.value = "Frontend Rendering Error: Failed to stream or parse PDF chunks from the backend. " + (err.message || err.toString());
 };
 
 // AI Fix
@@ -1212,7 +1221,7 @@ const activeFileName = computed(() => {
             <span>PDF PREVIEW</span>
           </div>
           <div v-if="pdfUrl" class="pdf-viewer">
-            <VuePdfEmbed :source="pdfUrl" class="pdf-embed-component" />
+            <VuePdfEmbed :source="pdfUrl" class="pdf-embed-component" @error="onPdfError" />
           </div>
           <div v-else class="empty-preview">
             <div class="placeholder-content">

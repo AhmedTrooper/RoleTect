@@ -1,7 +1,9 @@
 use axum::{
+    body::Body,
     extract::{State, Json},
-    http::StatusCode,
-    routing::post,
+    http::{header, HeaderMap, StatusCode},
+    response::IntoResponse,
+    routing::{get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -10,7 +12,9 @@ use tauri::{AppHandle, Manager};
 use crate::AppState;
 use nanoid::nanoid;
 use tower_http::cors::{Any, CorsLayer};
-
+use tokio::fs::File;
+use tokio::io::{AsyncReadExt, AsyncSeekExt, SeekFrom};
+use tokio_util::io::ReaderStream;
 #[derive(Deserialize)]
 pub struct ExtensionPayload {
     pub url: Option<String>,
@@ -34,16 +38,14 @@ pub async fn start_server(app_handle: AppHandle) {
     });
 
     let cors = CorsLayer::new()
-        .allow_origin([
-            "http://localhost:1420".parse().unwrap(),
-            "tauri://localhost".parse().unwrap(),
-        ])
+        .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
 
     let app = Router::new()
         .route("/health", axum::routing::get(health_check))
         .route("/inbox/ingest", post(ingest_job))
+        .route("/static-pdf/output.pdf", get(stream_fixed_pdf))
         .layer(cors)
         .with_state(state);
 
@@ -135,4 +137,67 @@ async fn ingest_job(
             message: "Invalid secret key".to_string(),
         })),
     }
+}
+
+async fn stream_fixed_pdf(
+    State(state): State<Arc<ServerState>>,
+    headers: HeaderMap,
+) -> axum::response::Response {
+    let docs_dir = state.app_handle.path().document_dir().expect("Failed to locate Documents folder");
+    let file_path = docs_dir.join("RoleTect").join("output.pdf");
+
+    let mut file = match File::open(&file_path).await {
+        Ok(f) => f,
+        Err(_) => return (StatusCode::NOT_FOUND, "Output PDF not generated yet").into_response(),
+    };
+
+    let file_len = match file.metadata().await {
+        Ok(m) => m.len(),
+        Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, "Metadata error").into_response(),
+    };
+
+    let range_header = headers.get(header::RANGE).and_then(|v| v.to_str().ok());
+
+    if let Some(range_str) = range_header {
+        if let Some(bytes_range) = range_str.strip_prefix("bytes=") {
+            let parts: Vec<&str> = bytes_range.split('-').collect();
+            if parts.len() == 2 {
+                let start = parts[0].parse::<u64>().unwrap_or(0);
+                let end_str = parts[1];
+                let mut end = if end_str.is_empty() { file_len - 1 } else { end_str.parse::<u64>().unwrap_or(file_len - 1) };
+                end = std::cmp::min(end, file_len - 1);
+
+                if start <= end {
+                    let length = end - start + 1;
+                    
+                    if file.seek(SeekFrom::Start(start)).await.is_ok() {
+                        let limited_stream = file.take(length);
+                        let body = Body::from_stream(ReaderStream::new(limited_stream));
+
+                        return (
+                            StatusCode::PARTIAL_CONTENT,
+                            [
+                                (header::CONTENT_TYPE, "application/pdf".to_string()),
+                                (header::ACCEPT_RANGES, "bytes".to_string()),
+                                (header::CONTENT_RANGE, format!("bytes {}-{}/{}", start, end, file_len)),
+                                (header::CONTENT_LENGTH, length.to_string()),
+                            ],
+                            body,
+                        ).into_response();
+                    }
+                }
+            }
+        }
+    }
+
+    let body = Body::from_stream(ReaderStream::new(file));
+    (
+        StatusCode::OK,
+        [
+            (header::CONTENT_TYPE, "application/pdf".to_string()),
+            (header::ACCEPT_RANGES, "bytes".to_string()),
+            (header::CONTENT_LENGTH, file_len.to_string()),
+        ],
+        body,
+    ).into_response()
 }

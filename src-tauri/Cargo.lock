@@ -9490,6 +9490,7 @@ dependencies = [
  "tauri-plugin-stronghold",
  "tectonic",
  "tokio",
+ "tokio-util",
  "tower-http",
 ]
 

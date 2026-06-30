@@ -1,4 +1,4 @@
-use tauri::{command, State};
+use tauri::{command, State, AppHandle, Manager};
 use std::path::PathBuf;
 use crate::{ai, AppState};
 use tectonic::status::StatusBackend;
@@ -101,7 +101,14 @@ pub async fn fix_diagram_with_ai(
 }
 
 #[command]
-pub async fn compile_resume_to_pdf(latex_code: String) -> Result<Vec<u8>, String> {
+pub async fn compile_resume_to_pdf(app_handle: AppHandle, latex_code: String) -> Result<Vec<u8>, String> {
+    let docs_dir = app_handle.path().document_dir().map_err(|e| format!("Failed to get documents dir: {}", e))?;
+    let roletect_dir = docs_dir.join("RoleTect");
+    if !roletect_dir.exists() {
+        std::fs::create_dir_all(&roletect_dir).map_err(|e| format!("Failed to create RoleTect dir: {}", e))?;
+    }
+    let output_pdf_path = roletect_dir.join("output.pdf");
+
     tokio::task::spawn_blocking(move || {
         let thread_handle = std::thread::Builder::new()
             .name("tectonic-compiler".into())
@@ -119,10 +126,14 @@ pub async fn compile_resume_to_pdf(latex_code: String) -> Result<Vec<u8>, String
                     .map_err(|e| format!("Failed to get format cache path: {}", e))?;
 
                 let mut sb = tectonic::driver::ProcessingSessionBuilder::default();
+                let temp_output_dir = std::env::temp_dir().join(format!("roletect-{}", nanoid::nanoid!()));
+                std::fs::create_dir_all(&temp_output_dir).map_err(|e| format!("Failed to create temp output dir: {}", e))?;
+
                 sb.bundle(bundle)
                     .primary_input_buffer(latex_code.as_bytes())
                     .tex_input_name("texput")
                     .filesystem_root(std::env::temp_dir()) // Use temp dir for intermediate files
+                    .output_dir(&temp_output_dir)
                     .format_cache_path(format_cache_path)
                     .format_name("latex")
                     .output_format(tectonic::driver::OutputFormat::Pdf)
@@ -134,13 +145,21 @@ pub async fn compile_resume_to_pdf(latex_code: String) -> Result<Vec<u8>, String
                 sess.run(&mut status)
                     .map_err(|e| format!("Compilation failed: {}\n\nLogs:\n{}", e, status.logs))?;
 
-                let out_data = sess.into_file_data();
-                
-                // For standalone, the output is in the "primary" entry of the memory filesystem
-                out_data.get("texput.pdf")
-                    .cloned()
-                    .ok_or_else(|| format!("Compilation appeared successful, but 'texput.pdf' was not generated.\n\nLogs:\n{}", status.logs))
-                    .map(|f| f.data)
+                let temp_pdf_path = temp_output_dir.join("texput.pdf");
+                if temp_pdf_path.exists() {
+                    let pdf_data = std::fs::read(&temp_pdf_path).map_err(|e| format!("Failed to read generated PDF: {}", e))?;
+                    
+                    // Copy it to Documents/RoleTect/output.pdf
+                    let _ = std::fs::write(&output_pdf_path, &pdf_data);
+
+                    // Clean up temp dir
+                    let _ = std::fs::remove_dir_all(&temp_output_dir);
+
+                    Ok(pdf_data)
+                } else {
+                    let _ = std::fs::remove_dir_all(&temp_output_dir);
+                    Err(format!("Compilation appeared successful, but PDF was not found at {:?}\n\nLogs:\n{}", temp_pdf_path, status.logs))
+                }
             })
             .map_err(|e| format!("Failed to spawn compiler thread: {}", e))?;
 
@@ -153,7 +172,14 @@ pub async fn compile_resume_to_pdf(latex_code: String) -> Result<Vec<u8>, String
 }
 
 #[command]
-pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: String) -> Result<Vec<u8>, String> {
+pub async fn compile_workspace_to_pdf(app_handle: AppHandle, workspace_dir: String, main_file_name: String) -> Result<Vec<u8>, String> {
+    let docs_dir = app_handle.path().document_dir().map_err(|e| format!("Failed to get documents dir: {}", e))?;
+    let roletect_dir = docs_dir.join("RoleTect");
+    if !roletect_dir.exists() {
+        std::fs::create_dir_all(&roletect_dir).map_err(|e| format!("Failed to create RoleTect dir: {}", e))?;
+    }
+    let output_pdf_path = roletect_dir.join("output.pdf");
+
     let workspace_path = PathBuf::from(&workspace_dir);
     
     if !workspace_path.is_dir() {
@@ -213,6 +239,9 @@ pub async fn compile_workspace_to_pdf(workspace_dir: String, main_file_name: Str
                     let mut final_pdf_path = workspace_path.join(&main_file_name);
                     final_pdf_path.set_extension("pdf");
                     let _ = std::fs::write(&final_pdf_path, &pdf_data);
+
+                    // ALSO copy to Documents/RoleTect/output.pdf
+                    let _ = std::fs::write(&output_pdf_path, &pdf_data);
 
                     // Clean up temp dir
                     let _ = std::fs::remove_dir_all(&temp_output_dir);
