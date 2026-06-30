@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { invoke, convertFileSrc } from '@tauri-apps/api/core';
-import { tempDir, join } from '@tauri-apps/api/path';
+import { invoke } from '@tauri-apps/api/core';
 import { save, message, ask } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { openUrl } from '@tauri-apps/plugin-opener';
