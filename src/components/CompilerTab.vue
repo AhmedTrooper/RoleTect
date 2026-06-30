@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
-import { join } from '@tauri-apps/api/path';
+import { join, tempDir } from '@tauri-apps/api/path';
 import { 
   writeFile, 
   readDir, 
@@ -41,6 +41,7 @@ import {
 } from '@lucide/vue';
 
 import { Codemirror } from 'vue-codemirror';
+import VuePdfEmbed from 'vue-pdf-embed';
 import { latex, latexLanguage, autoCloseTags } from 'codemirror-lang-latex';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
@@ -337,6 +338,11 @@ const stopResizingPreview = () => {
   isResizingPreview.value = false;
   document.removeEventListener('mousemove', handlePreviewMouseMove);
   document.removeEventListener('mouseup', stopResizingPreview);
+  
+  // Force vue-pdf-embed to re-render to the new pane width
+  nextTick(() => {
+    window.dispatchEvent(new Event('resize'));
+  });
 };
 
 const setMainFile = async (path: string) => {
@@ -849,12 +855,9 @@ const compilePdf = async () => {
       URL.revokeObjectURL(pdfUrl.value);
     }
     
-    // Use FileReader to create a base64 Data URL to avoid production iframe issues
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = () => {
-      pdfUrl.value = reader.result as string;
-    };
+    // Create a blob URL for the PDF so vue-pdf-embed can render it directly
+    // This avoids cross-origin fetch issues and the need for asset protocol
+    pdfUrl.value = URL.createObjectURL(blob);
   } catch (err: any) {
     console.error("Compilation Error:", err);
     compilationError.value = err.message || err.toString();
@@ -1209,7 +1212,7 @@ const activeFileName = computed(() => {
             <span>PDF PREVIEW</span>
           </div>
           <div v-if="pdfUrl" class="pdf-viewer">
-            <object :data="pdfUrl" type="application/pdf" class="pdf-embed-component"></object>
+            <VuePdfEmbed :source="pdfUrl" class="pdf-embed-component" />
           </div>
           <div v-else class="empty-preview">
             <div class="placeholder-content">
@@ -1927,7 +1930,7 @@ const activeFileName = computed(() => {
   display: block;
   background: var(--bg);
   position: relative;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .pdf-embed-component {

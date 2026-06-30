@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { tempDir, join } from '@tauri-apps/api/path';
 import { save, message, ask } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -12,7 +13,7 @@ import { useCoverLettersStore } from '../store/cover_letters';
 import { useDialogStore } from '../store/dialog';
 import { useJobsStore, Job } from '../store/jobs';
 import CustomSelect from './CustomSelect.vue';
-
+import VuePdfEmbed from 'vue-pdf-embed';
 // Codemirror imports
 import { Codemirror } from 'vue-codemirror';
 import { latex, latexLanguage, autoCloseTags } from 'codemirror-lang-latex';
@@ -314,27 +315,23 @@ const compilePdf = async () => {
     });
     
     const bytes = new Uint8Array(pdfBytes);
-    const blob = new Blob([bytes], { type: 'application/pdf' });
     
-    // Use FileReader to create a base64 Data URL to avoid production iframe issues
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      if (activeMode.value === 'resume') {
-        resumePdfBytes.value = bytes;
-        if (resumePdfUrl.value && resumePdfUrl.value.startsWith('blob:')) {
-          URL.revokeObjectURL(resumePdfUrl.value);
-        }
-        resumePdfUrl.value = dataUrl;
-      } else {
-        clPdfBytes.value = bytes;
-        if (clPdfUrl.value && clPdfUrl.value.startsWith('blob:')) {
-          URL.revokeObjectURL(clPdfUrl.value);
-        }
-        clPdfUrl.value = dataUrl;
+    // Create a blob URL for the PDF so vue-pdf-embed can render it directly
+    const assetUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    
+    if (activeMode.value === 'resume') {
+      resumePdfBytes.value = bytes;
+      if (resumePdfUrl.value && resumePdfUrl.value.startsWith('blob:')) {
+        URL.revokeObjectURL(resumePdfUrl.value);
       }
-    };
+      resumePdfUrl.value = assetUrl;
+    } else {
+      clPdfBytes.value = bytes;
+      if (clPdfUrl.value && clPdfUrl.value.startsWith('blob:')) {
+        URL.revokeObjectURL(clPdfUrl.value);
+      }
+      clPdfUrl.value = assetUrl;
+    }
 
     await saveLatexContent(true); // Silent save after successful compilation
   } catch (err: any) {
@@ -988,8 +985,8 @@ const deleteJob = async () => {
           </AnimatePresence>
         </div>
 
-        <div v-if="activePdfUrl" class="preview-pane">
-          <object :data="activePdfUrl" type="application/pdf" class="pdf-embed-component"></object>
+        <div v-if="activePdfUrl" class="pdf-viewer">
+          <VuePdfEmbed :source="activePdfUrl" class="pdf-embed-component" />
         </div>
       </div>
     </div>
@@ -1506,19 +1503,17 @@ const deleteJob = async () => {
   cursor: pointer;
 }
 
-.preview-pane {
+.pdf-viewer {
   flex: 1;
-  border-top: 1px solid var(--line);
+  display: block;
   background: var(--bg);
-  min-height: 200px;
   position: relative;
-  overflow: hidden;
+  overflow: auto; /* Enable scrolling for vue-pdf-embed */
 }
 
 .pdf-embed-component {
   width: 100%;
   height: 100%;
-  border: none;
   display: block;
   background: white;
 }
