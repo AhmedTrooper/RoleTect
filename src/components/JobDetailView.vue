@@ -18,7 +18,6 @@ import { Codemirror } from 'vue-codemirror';
 import { latex, latexLanguage, autoCloseTags } from 'codemirror-lang-latex';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
-import VuePdfEmbed from 'vue-pdf-embed';
 
 import { 
   ArrowLeft, 
@@ -980,7 +979,7 @@ const deleteJob = async () => {
         </div>
 
         <div v-if="activePdfUrl" class="preview-pane">
-          <VuePdfEmbed :source="activePdfUrl" class="pdf-embed-component" />
+          <iframe :src="activePdfUrl" class="pdf-embed-component"></iframe>
         </div>
       </div>
     </div>
@@ -1500,14 +1499,18 @@ const deleteJob = async () => {
 .preview-pane {
   flex: 1;
   border-top: 1px solid var(--line);
-  background: #525659;
+  background: var(--bg);
   min-height: 200px;
-  overflow: auto;
+  position: relative;
+  overflow: hidden;
 }
+
 .pdf-embed-component {
-  display: block;
-  margin: 0 auto;
   width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: white;
 }
 
 .w-full { width: 100%; }

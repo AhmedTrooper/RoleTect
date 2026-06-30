@@ -44,6 +44,7 @@ tower-http = { version = "0.6.10", features = ["cors"] }
 rig-bedrock = "0.38.1"
 aws-config = "1.8.5"
 aws-sdk-bedrockruntime = "1.124.0"
+tauri-plugin-localhost = "2.3.2"
 
 
 [profile.dev.package.rust-argon2]
