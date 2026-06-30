@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { tempDir, join } from '@tauri-apps/api/path';
@@ -114,6 +114,39 @@ const isDownloading = ref(false);
 const isFixing = ref(false);
 const isRefining = ref(false);
 const refinementInstruction = ref('');
+
+// Resizer State
+const previewWidth = ref(450);
+const isResizingPreview = ref(false);
+const splitPaneRef = ref<HTMLElement | null>(null);
+
+const startResizingPreview = (_e: MouseEvent) => {
+  isResizingPreview.value = true;
+  document.addEventListener('mousemove', handlePreviewMouseMove);
+  document.addEventListener('mouseup', stopResizingPreview);
+};
+
+const handlePreviewMouseMove = (e: MouseEvent) => {
+  if (!isResizingPreview.value || !splitPaneRef.value) return;
+  const rect = splitPaneRef.value.getBoundingClientRect();
+  const newWidth = rect.right - e.clientX;
+  if (newWidth < 100) {
+    previewWidth.value = 100;
+    return;
+  }
+  const minWidth = 100;
+  const maxWidth = rect.width - 200; // leave space for editor
+  previewWidth.value = Math.max(minWidth, Math.min(maxWidth, newWidth));
+};
+
+const stopResizingPreview = () => {
+  isResizingPreview.value = false;
+  document.removeEventListener('mousemove', handlePreviewMouseMove);
+  document.removeEventListener('mouseup', stopResizingPreview);
+  nextTick(() => {
+    window.dispatchEvent(new Event('resize'));
+  });
+};
 
 // Computed bindings for active mode
 const activeLatex = computed({
@@ -938,55 +971,59 @@ const deleteJob = async () => {
           </Motion>
         </AnimatePresence>
 
-        <div class="editor-container" ref="editorContainer">
-          <codemirror
-            v-if="activeMode === 'resume'"
-            v-model="resumeLatex"
-            placeholder="Tailored Resume LaTeX content will appear here..."
-            :style="{ height: '100%' }"
-            :autofocus="true"
-            :indent-with-tab="true"
-            :tab-size="2"
-            :extensions="extensions"
-            class="latex-editor-cm"
-          />
-          <codemirror
-            v-else
-            v-model="clLatex"
-            placeholder="Tailored Cover Letter LaTeX content will appear here..."
-            :style="{ height: '100%' }"
-            :autofocus="true"
-            :indent-with-tab="true"
-            :tab-size="2"
-            :extensions="extensions"
-            class="latex-editor-cm"
-          />
-          
-          <AnimatePresence>
-            <Motion 
-              v-if="activeLatex"
-              class="refinement-bar"
-              drag
-              :drag-constraints="editorContainer || undefined"
-              :drag-elastic="0.1"
-              :initial="{ opacity: 0, y: -10, x: '-50%' }"
-              :animate="{ opacity: 1, y: 0, x: '-50%' }"
-              :exit="{ opacity: 0, y: -10, x: '-50%' }"
-            >
-              <input 
-                v-model="refinementInstruction" 
-                :placeholder="`Refine tailored ${activeMode === 'resume' ? 'resume' : 'cover letter'}...`"
-                @keyup.enter="refineWithAi"
-              />
-              <button @click="refineWithAi" :disabled="isRefining">
-                {{ isRefining ? '...' : '→' }}
-              </button>
-            </Motion>
-          </AnimatePresence>
-        </div>
+        <div class="split-pane" ref="splitPaneRef" :class="{ 'is-resizing': isResizingPreview }">
+          <div class="editor-container" ref="editorContainer">
+            <codemirror
+              v-if="activeMode === 'resume'"
+              v-model="resumeLatex"
+              placeholder="Tailored Resume LaTeX content will appear here..."
+              :style="{ height: '100%' }"
+              :autofocus="true"
+              :indent-with-tab="true"
+              :tab-size="2"
+              :extensions="extensions"
+              class="latex-editor-cm"
+            />
+            <codemirror
+              v-else
+              v-model="clLatex"
+              placeholder="Tailored Cover Letter LaTeX content will appear here..."
+              :style="{ height: '100%' }"
+              :autofocus="true"
+              :indent-with-tab="true"
+              :tab-size="2"
+              :extensions="extensions"
+              class="latex-editor-cm"
+            />
+            
+            <AnimatePresence>
+              <Motion 
+                v-if="activeLatex"
+                class="refinement-bar"
+                drag
+                :drag-constraints="editorContainer || undefined"
+                :drag-elastic="0.1"
+                :initial="{ opacity: 0, y: -10, x: '-50%' }"
+                :animate="{ opacity: 1, y: 0, x: '-50%' }"
+                :exit="{ opacity: 0, y: -10, x: '-50%' }"
+              >
+                <input 
+                  v-model="refinementInstruction" 
+                  :placeholder="`Refine tailored ${activeMode === 'resume' ? 'resume' : 'cover letter'}...`"
+                  @keyup.enter="refineWithAi"
+                />
+                <button @click="refineWithAi" :disabled="isRefining">
+                  {{ isRefining ? '...' : '→' }}
+                </button>
+              </Motion>
+            </AnimatePresence>
+          </div>
 
-        <div v-if="activePdfUrl" class="pdf-viewer">
-          <VuePdfEmbed :source="activePdfUrl" class="pdf-embed-component" />
+          <div v-if="activePdfUrl" class="preview-resizer" @mousedown="startResizingPreview"></div>
+
+          <div v-if="activePdfUrl" class="pdf-viewer" :style="{ width: previewWidth + 'px', flex: 'none' }">
+            <VuePdfEmbed :source="activePdfUrl" class="pdf-embed-component" />
+          </div>
         </div>
       </div>
     </div>
@@ -1435,8 +1472,35 @@ const deleteJob = async () => {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 200px;
+  min-width: 200px;
   background: #282c34; /* One Dark background */
+}
+
+.split-pane {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.split-pane.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.preview-resizer {
+  width: 4px;
+  background: var(--bg-accent);
+  cursor: col-resize;
+  transition: background 0.2s;
+  z-index: 10;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+.preview-resizer:hover, .preview-resizer:active {
+  background: var(--accent);
 }
 
 .latex-editor-cm {
