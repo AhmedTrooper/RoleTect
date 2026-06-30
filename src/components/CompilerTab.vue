@@ -45,6 +45,7 @@ import { latex, latexLanguage, autoCloseTags } from 'codemirror-lang-latex';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
 import FileTreeItem from './FileTreeItem.vue';
+import VuePdfEmbed from 'vue-pdf-embed';
 
 const settingsStore = useSettingsStore();
 const dialog = useDialogStore();
@@ -1203,7 +1204,7 @@ const activeFileName = computed(() => {
             <span>PDF PREVIEW</span>
           </div>
           <div v-if="pdfUrl" class="pdf-viewer">
-            <object :data="pdfUrl" type="application/pdf"></object>
+            <VuePdfEmbed :source="pdfUrl" class="pdf-embed-component" />
           </div>
           <div v-else class="empty-preview">
             <div class="placeholder-content">
@@ -1918,20 +1919,15 @@ const activeFileName = computed(() => {
 
 .pdf-viewer {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  display: block;
   background: var(--bg);
-  overflow: hidden;
+  overflow: auto;
 }
 
-.pdf-viewer object {
+.pdf-embed-component {
   display: block;
-  margin: 0;
-  padding: 0;
-  vertical-align: top;
+  margin: 0 auto;
   width: 100%;
-  height: 100%;
-  border: none;
 }
 
 .empty-preview {
