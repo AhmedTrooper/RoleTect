@@ -844,11 +844,17 @@ const compilePdf = async () => {
     pdfBytesBuffer.value = new Uint8Array(pdfBytes);
     const blob = new Blob([pdfBytesBuffer.value], { type: 'application/pdf' });
     
-    // Clean up previous URL to prevent memory leaks
-    if (pdfUrl.value) {
+    // Clean up previous URL if it was a blob URL
+    if (pdfUrl.value && pdfUrl.value.startsWith('blob:')) {
       URL.revokeObjectURL(pdfUrl.value);
     }
-    pdfUrl.value = URL.createObjectURL(blob);
+    
+    // Use FileReader to create a base64 Data URL to avoid production iframe issues
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = () => {
+      pdfUrl.value = reader.result as string;
+    };
   } catch (err: any) {
     console.error("Compilation Error:", err);
     compilationError.value = err.message || err.toString();
@@ -1203,7 +1209,7 @@ const activeFileName = computed(() => {
             <span>PDF PREVIEW</span>
           </div>
           <div v-if="pdfUrl" class="pdf-viewer">
-            <iframe :src="pdfUrl" class="pdf-embed-component"></iframe>
+            <object :data="pdfUrl" type="application/pdf" class="pdf-embed-component"></object>
           </div>
           <div v-else class="empty-preview">
             <div class="placeholder-content">

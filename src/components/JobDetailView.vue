@@ -316,15 +316,25 @@ const compilePdf = async () => {
     const bytes = new Uint8Array(pdfBytes);
     const blob = new Blob([bytes], { type: 'application/pdf' });
     
-    if (activeMode.value === 'resume') {
-      resumePdfBytes.value = bytes;
-      if (resumePdfUrl.value) URL.revokeObjectURL(resumePdfUrl.value);
-      resumePdfUrl.value = URL.createObjectURL(blob);
-    } else {
-      clPdfBytes.value = bytes;
-      if (clPdfUrl.value) URL.revokeObjectURL(clPdfUrl.value);
-      clPdfUrl.value = URL.createObjectURL(blob);
-    }
+    // Use FileReader to create a base64 Data URL to avoid production iframe issues
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      if (activeMode.value === 'resume') {
+        resumePdfBytes.value = bytes;
+        if (resumePdfUrl.value && resumePdfUrl.value.startsWith('blob:')) {
+          URL.revokeObjectURL(resumePdfUrl.value);
+        }
+        resumePdfUrl.value = dataUrl;
+      } else {
+        clPdfBytes.value = bytes;
+        if (clPdfUrl.value && clPdfUrl.value.startsWith('blob:')) {
+          URL.revokeObjectURL(clPdfUrl.value);
+        }
+        clPdfUrl.value = dataUrl;
+      }
+    };
 
     await saveLatexContent(true); // Silent save after successful compilation
   } catch (err: any) {
@@ -979,7 +989,7 @@ const deleteJob = async () => {
         </div>
 
         <div v-if="activePdfUrl" class="preview-pane">
-          <iframe :src="activePdfUrl" class="pdf-embed-component"></iframe>
+          <object :data="activePdfUrl" type="application/pdf" class="pdf-embed-component"></object>
         </div>
       </div>
     </div>
