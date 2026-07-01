@@ -41,7 +41,7 @@ import {
 } from '@lucide/vue';
 
 import { Codemirror } from 'vue-codemirror';
-import VuePdfEmbed from 'vue-pdf-embed';
+// import VuePdfEmbed from 'vue-pdf-embed';
 import { latex, latexLanguage, autoCloseTags } from 'codemirror-lang-latex';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
@@ -870,10 +870,10 @@ const compilePdf = async () => {
   }
 };
 
-const onPdfError = (err: any) => {
-  console.error("PDF Rendering Error:", err);
-  compilationError.value = "Frontend Rendering Error: Failed to stream or parse PDF chunks from the backend. " + (err.message || err.toString());
-};
+// const onPdfError = (err: any) => {
+//   console.error("PDF Rendering Error:", err);
+//   compilationError.value = "Frontend Rendering Error: Failed to stream or parse PDF chunks from the backend. " + (err.message || err.toString());
+// };
 
 // AI Fix
 const fixWithAi = async () => {
@@ -1221,7 +1221,8 @@ const activeFileName = computed(() => {
             <span>PDF PREVIEW</span>
           </div>
           <div v-if="pdfUrl" class="pdf-viewer">
-            <VuePdfEmbed :source="pdfUrl" class="pdf-embed-component" @error="onPdfError" />
+            <!-- <VuePdfEmbed :source="pdfUrl" class="pdf-embed-component" @error="onPdfError" /> -->
+            <iframe :src="pdfUrl.url" class="pdf-embed-component" style="width: 100%; height: 100%; border: none;" allow="fullscreen"></iframe>
           </div>
           <div v-else class="empty-preview">
             <div class="placeholder-content">
