@@ -17,6 +17,7 @@ import { useDialogStore } from '../store/dialog';
 import { useSettingsStore } from '../store/settings';
 import mermaid from 'mermaid';
 import svgPanZoom from 'svg-pan-zoom';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 
 // Markdown imports
 import MarkdownIt from 'markdown-it';
@@ -47,7 +48,10 @@ import {
   Check,
   Download,
   ImageDown,
-  Maximize2
+  Maximize2,
+  FileUp,
+  ExternalLink,
+  PanelRight
 } from '@lucide/vue';
 
 import { Codemirror } from 'vue-codemirror';
@@ -102,6 +106,18 @@ interface FileItem {
 const workspacePath = ref<string | null>(null);
 const fileTree = ref<FileItem[]>([]);
 const activeFilePath = ref<string | null>(null);
+const isTemplatesVisible = ref(false);
+const isExporting = ref(false);
+const isPreviewVisible = ref(true);
+
+const togglePreview = () => {
+  isPreviewVisible.value = !isPreviewVisible.value;
+};
+
+const workspaceName = computed(() => {
+  if (!workspacePath.value) return '';
+  return workspacePath.value.split(/[/\\]/).pop() || '';
+});
 const standaloneFileType = ref<'mmd' | 'md'>('mmd');
 const diagramCode = ref('graph TD\n    A[Start] --> B{Process}\n    B -->|Success| C[End]\n    B -->|Failure| D[Retry]');
 
@@ -136,12 +152,10 @@ const panZoomInstance = ref<any>(null);
 let renderTimeout: any = null;
 let currentRenderVersion = 0;
 
-const isTemplatesVisible = ref(false);
 const activeTooltip = ref<string | null>(null);
 
 const isRefining = ref(false);
 const isFixing = ref(false);
-const isExporting = ref(false);
 const refinementInstruction = ref('');
 
 // Export Resolution State
@@ -511,6 +525,29 @@ const selectWorkspace = async () => {
     }
   } catch (err) {
     console.error('Failed to select workspace:', err);
+  }
+};
+
+const openSingleFile = async () => {
+  try {
+    const selected = await openDialog({
+      directory: false,
+      multiple: false,
+      title: 'Open Diagram/Markdown File',
+      filters: [{ name: 'Diagram/Markdown', extensions: ['mmd', 'md'] }]
+    });
+
+    if (selected && typeof selected === 'string') {
+      await selectFile({ name: selected.split(/[/\\]/).pop() || '', path: selected, isDir: false }, false);
+    }
+  } catch (err) {
+    console.error('Failed to open file:', err);
+  }
+};
+
+const openWorkspaceInExplorer = async () => {
+  if (workspacePath.value) {
+    await revealItemInDir(workspacePath.value);
   }
 };
 
@@ -1222,20 +1259,32 @@ const activeFileName = computed(() => {
         <!-- Sidebar File Explorer -->
         <aside v-if="isSidebarVisible" class="workspace-sidebar" :style="{ width: sidebarWidth + 'px' }">
           <div class="sidebar-header">
-            <span>EXPLORER</span>
-            <div class="header-tools">
-              <button class="header-tool-btn" @click="refreshFileTree" title="Refresh"><RotateCw :size="16" /></button>
-              <button class="header-tool-btn" @click="createNewFile(null, '.mmd')" title="New Diagram"><Plus :size="18" /></button>
-              <button class="header-tool-btn" @click="createNewFile(null, '.md')" title="New Markdown"><FileCode :size="18" /></button>
-              <button class="header-tool-btn" @click="createNewFolder()" title="New Folder"><FolderPlus :size="18" /></button>
-              <button v-if="workspacePath" @click="closeWorkspace" title="Close Workspace" class="header-tool-btn close-workspace-btn"><X :size="18" /></button>
+            <div class="sidebar-header-top" :title="workspacePath || 'Workspace'">
+              <div class="workspace-name-row">
+                <FolderOpen :size="14" class="workspace-folder-icon" />
+                <span class="workspace-title">{{ workspaceName || 'EXPLORER' }}</span>
+                <button v-if="workspacePath" @click="closeWorkspace" title="Close Workspace" class="close-workspace-btn"><X :size="14" /></button>
+              </div>
+              <span v-if="workspacePath" class="workspace-path-subtext">{{ workspacePath }}</span>
+            </div>
+            <div class="sidebar-header-tools">
+              <button class="header-tool-btn" @click="openSingleFile" title="Open File..."><FileUp :size="14" /></button>
+              <button class="header-tool-btn" @click="selectWorkspace" title="Open / Switch Folder..."><FolderOpen :size="14" /></button>
+              <button v-if="workspacePath" class="header-tool-btn" @click="openWorkspaceInExplorer" title="Reveal in System Explorer"><ExternalLink :size="14" /></button>
+              <button class="header-tool-btn" @click="refreshFileTree" title="Refresh"><RotateCw :size="14" /></button>
+              <button class="header-tool-btn" @click="createNewFile(null, '.mmd')" title="New Diagram"><Plus :size="14" /></button>
+              <button class="header-tool-btn" @click="createNewFile(null, '.md')" title="New Markdown"><FileCode :size="14" /></button>
+              <button class="header-tool-btn" @click="createNewFolder()" title="New Folder"><FolderPlus :size="14" /></button>
             </div>
           </div>
 
           <div v-if="!workspacePath" class="sidebar-empty">
             <FolderOpen :size="32" />
             <p>No workspace selected</p>
-            <button class="btn-primary-sm" @click="selectWorkspace">Open Folder</button>
+            <div class="empty-actions">
+              <button class="btn-primary-sm" @click="selectWorkspace">Open Folder</button>
+              <button class="btn-secondary-sm" @click="openSingleFile">Open File</button>
+            </div>
           </div>
 
           <div v-else class="file-tree">
@@ -1271,6 +1320,24 @@ const activeFileName = computed(() => {
               <FileCode :size="14" />
               <span>{{ activeFileName }}</span>
               <span v-if="isDirty" class="dirty-indicator">●</span>
+            </div>
+            <div class="pane-header-actions">
+              <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'preview'" @mouseleave="activeTooltip = null">
+                <button class="action-btn-inline" @click="togglePreview" :class="{ active: isPreviewVisible }">
+                  <PanelRight :size="14" />
+                </button>
+                <AnimatePresence>
+                  <Motion
+                    v-if="activeTooltip === 'preview'"
+                    :initial="{ opacity: 0, y: 5, scale: 0.9 }"
+                    :animate="{ opacity: 1, y: 0, scale: 1 }"
+                    :exit="{ opacity: 0, y: 5, scale: 0.9 }"
+                    class="floating-message tooltip-bottom-left"
+                  >
+                    Toggle Preview
+                  </Motion>
+                </AnimatePresence>
+              </div>
             </div>
           </div>
           <div class="editor-relative-wrapper" ref="editorContainer">
@@ -1311,7 +1378,7 @@ const activeFileName = computed(() => {
         </section>
 
         <!-- Preview Section -->
-        <section class="preview-section">
+        <section class="preview-section" v-if="isPreviewVisible">
           <!-- Loading Overlay (Scoped to Preview) -->
           <AnimatePresence>
             <Motion
@@ -1657,6 +1724,29 @@ const activeFileName = computed(() => {
   background: var(--surface);
 }
 
+.btn-secondary-sm {
+  background: var(--surface-soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-secondary-sm:hover {
+  background: var(--surface);
+}
+
+.file-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
 .mode-toggle {
   width: auto;
   padding: 0 10px;
@@ -1783,22 +1873,79 @@ const activeFileName = computed(() => {
 }
 
 .sidebar-header {
-  height: 32px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
+  flex-direction: column;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--muted);
-  letter-spacing: 0.05em;
+  padding: 8px 10px 6px 10px;
+  gap: 6px;
 }
 
-.header-tools {
+.sidebar-header-top {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.workspace-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.workspace-folder-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.workspace-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+}
+
+.close-workspace-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.close-workspace-btn:hover {
+  color: var(--warning) !important;
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.workspace-path-subtext {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+.sidebar-header-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   gap: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line-soft, rgba(255,255,255,0.05));
 }
 
 .header-tool-btn {
@@ -1806,7 +1953,9 @@ const activeFileName = computed(() => {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  padding: 4px;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -1817,10 +1966,6 @@ const activeFileName = computed(() => {
 .header-tool-btn:hover {
   background: var(--surface-soft);
   color: var(--ink);
-}
-
-.close-workspace-btn:hover {
-  color: var(--warning) !important;
 }
 
 .sidebar-empty {
@@ -1838,6 +1983,12 @@ const activeFileName = computed(() => {
 .sidebar-empty p {
   font-size: 0.75rem;
   margin: 0;
+}
+
+.empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .btn-primary-sm {

@@ -85,8 +85,14 @@ const activeTooltip = ref<string | null>(null);
 
 // Global State
 const isLoading = ref(true);
-const isGenerating = ref(false);
-const isCompilingPDF = ref(false);
+const isGeneratingResume = ref(false);
+const isGeneratingCl = ref(false);
+const isGenerating = computed(() => activeMode.value === 'resume' ? isGeneratingResume.value : isGeneratingCl.value);
+
+const isCompilingResume = ref(false);
+const isCompilingCl = ref(false);
+const isCompilingPDF = computed(() => activeMode.value === 'resume' ? isCompilingResume.value : isCompilingCl.value);
+
 const error = ref<string | null>(null);
 const activeMode = ref<'resume' | 'cl'>('resume');
 const jobDetails = ref<Job | null>(null);
@@ -110,9 +116,18 @@ const clCompError = ref<string | null>(null);
 
 // Common Editor/Preview State (Active)
 const isDownloading = ref(false);
-const isFixing = ref(false);
-const isRefining = ref(false);
+const isFixingResume = ref(false);
+const isFixingCl = ref(false);
+const isFixing = computed(() => activeMode.value === 'resume' ? isFixingResume.value : isFixingCl.value);
+
+const isRefiningResume = ref(false);
+const isRefiningCl = ref(false);
+const isRefining = computed(() => activeMode.value === 'resume' ? isRefiningResume.value : isRefiningCl.value);
+
 const refinementInstruction = ref('');
+
+const isResumeCompiled = ref(false);
+const isClCompiled = ref(false);
 
 // Resizer State
 const previewWidth = ref(450);
@@ -249,14 +264,25 @@ onMounted(async () => {
   }
 });
 
+import { onUnmounted } from 'vue';
+onUnmounted(() => {
+  isResumeCompiled.value = false;
+  isClCompiled.value = false;
+  resumePdfUrl.value = null;
+  clPdfUrl.value = null;
+});
+
 // Trigger AI Generation
 const generateContent = async () => {
-  const isResume = activeMode.value === 'resume';
+  const targetMode = activeMode.value;
+  const isResume = targetMode === 'resume';
   const selectedTemplate = isResume ? resumeSelectedId.value : clSelectedId.value;
   
   if (!jobDetails.value || !selectedTemplate) return;
   
-  isGenerating.value = true;
+  if (isResume) isGeneratingResume.value = true;
+  else isGeneratingCl.value = true;
+  
   error.value = null;
   
   try {
@@ -295,14 +321,22 @@ const generateContent = async () => {
     console.error("Tailoring Error:", err);
     error.value = err.toString();
   } finally {
-    isGenerating.value = false;
+    if (isResume) isGeneratingResume.value = false;
+    else isGeneratingCl.value = false;
   }
 };
 
 const refineWithAi = async () => {
-  if (!activeLatex.value || !refinementInstruction.value.trim() || isRefining.value) return;
+  const targetMode = activeMode.value;
+  const currentLatex = targetMode === 'resume' ? resumeLatex.value : clLatex.value;
+  const instruction = refinementInstruction.value.trim();
+  const isCurrentlyRefining = targetMode === 'resume' ? isRefiningResume.value : isRefiningCl.value;
   
-  isRefining.value = true;
+  if (!currentLatex || !instruction || isCurrentlyRefining) return;
+  
+  if (targetMode === 'resume') isRefiningResume.value = true;
+  else isRefiningCl.value = true;
+  
   error.value = null;
 
   try {
@@ -316,34 +350,66 @@ const refineWithAi = async () => {
       provider,
       model,
       apiKey,
-      currentLatex: activeLatex.value,
-      instruction: refinementInstruction.value.trim()
+      currentLatex: currentLatex,
+      instruction: instruction
     });
 
-    activeLatex.value = refinedCode;
-    refinementInstruction.value = '';
-    error.value = `AI has refined the ${activeMode.value}. Re-compiling...`;
+    if (targetMode === 'resume') resumeLatex.value = refinedCode;
+    else clLatex.value = refinedCode;
     
-    await compilePdf();
+    refinementInstruction.value = '';
+    error.value = `AI has refined the ${targetMode}. Re-compiling...`;
+    
+    await doCompilePdf(targetMode);
   } catch (err: any) {
     console.error("AI Refinement Error:", err);
     error.value = `AI Refinement failed: ${err.toString()}`;
   } finally {
-    isRefining.value = false;
+    if (targetMode === 'resume') isRefiningResume.value = false;
+    else isRefiningCl.value = false;
   }
 };
 
-// Trigger PDF Compilation
-const compilePdf = async () => {
-  if (!activeLatex.value) return;
+const doSaveLatexContent = async (targetMode: 'resume' | 'cl', silent = false) => {
+  try {
+    if (targetMode === 'resume') {
+      await invoke('update_tailored_resume', {
+        jobId: props.id,
+        baseResumeId: resumeSelectedId.value,
+        latexContent: resumeLatex.value
+      });
+      isResumeDirty.value = false;
+    } else {
+      await invoke('update_tailored_cover_letter', {
+        jobId: props.id,
+        baseClId: clSelectedId.value,
+        latexContent: clLatex.value
+      });
+      isClDirty.value = false;
+    }
+    if (!silent) await message('Content saved successfully.', { title: 'Success', kind: 'info' });
+  } catch (err: any) {
+    console.error("Save Error:", err);
+    if (!silent) await message(`Failed to save changes: ${err.toString()}`, { title: 'Save Failed', kind: 'error' });
+  }
+};
+
+const saveLatexContent = (silent = false) => doSaveLatexContent(activeMode.value, typeof silent === 'boolean' ? silent : false);
+
+const doCompilePdf = async (targetMode: 'resume' | 'cl') => {
+  const currentLatex = targetMode === 'resume' ? resumeLatex.value : clLatex.value;
+  if (!currentLatex) return;
   
-  isCompilingPDF.value = true;
+  if (targetMode === 'resume') isCompilingResume.value = true;
+  else isCompilingCl.value = true;
+  
   error.value = null;
-  activeCompError.value = null;
+  if (targetMode === 'resume') resumeCompError.value = null;
+  else clCompError.value = null;
   
   try {
     const pdfBytes = await invoke<number[]>('compile_resume_to_pdf', { 
-      latexCode: activeLatex.value 
+      latexCode: currentLatex 
     });
     
     const bytes = new Uint8Array(pdfBytes);
@@ -357,23 +423,29 @@ const compilePdf = async () => {
       rangeChunkSize: 1024 * 1024 // 1MB chunks
     };
     
-    if (activeMode.value === 'resume') {
+    if (targetMode === 'resume') {
       resumePdfBytes.value = bytes;
       resumePdfUrl.value = sourceObj;
+      isResumeCompiled.value = true;
     } else {
       clPdfBytes.value = bytes;
       clPdfUrl.value = sourceObj;
+      isClCompiled.value = true;
     }
 
-    await saveLatexContent(true); // Silent save after successful compilation
+    await doSaveLatexContent(targetMode, true); // Silent save after successful compilation
   } catch (err: any) {
     console.error("PDF Compilation Error:", err);
-    activeCompError.value = err.toString();
+    if (targetMode === 'resume') resumeCompError.value = err.toString();
+    else clCompError.value = err.toString();
     error.value = "LaTeX Compilation Failed. You can try 'AI Fix' or manually edit and Save.";
   } finally {
-    isCompilingPDF.value = false;
+    if (targetMode === 'resume') isCompilingResume.value = false;
+    else isCompilingCl.value = false;
   }
 };
+
+const compilePdf = () => doCompilePdf(activeMode.value);
 
 const onPdfError = (err: any) => {
   console.error("PDF Rendering Error:", err);
@@ -396,37 +468,29 @@ const handleTabSwitch = async (mode: 'resume' | 'cl') => {
     if (!confirmed) return;
   }
   
+  // Clear the PDF preview to prevent showing stale 'output.pdf' which might belong to the other tab
+  if (mode === 'resume') {
+    isResumeCompiled.value = false;
+    resumePdfUrl.value = null;
+  } else {
+    isClCompiled.value = false;
+    clPdfUrl.value = null;
+  }
+  
   activeMode.value = mode;
 };
 
-const saveLatexContent = async (silent = false) => {
-  try {
-    if (activeMode.value === 'resume') {
-      await invoke('update_tailored_resume', {
-        jobId: props.id,
-        baseResumeId: resumeSelectedId.value,
-        latexContent: resumeLatex.value
-      });
-      isResumeDirty.value = false;
-    } else {
-      await invoke('update_tailored_cover_letter', {
-        jobId: props.id,
-        baseClId: clSelectedId.value,
-        latexContent: clLatex.value
-      });
-      isClDirty.value = false;
-    }
-    if (!silent) await message('Content saved successfully.', { title: 'Success', kind: 'info' });
-  } catch (err: any) {
-    console.error("Save Error:", err);
-    if (!silent) await message(`Failed to save changes: ${err.toString()}`, { title: 'Save Failed', kind: 'error' });
-  }
-};
-
 const fixWithAi = async () => {
-  if (!activeLatex.value || !activeCompError.value || isFixing.value) return;
+  const targetMode = activeMode.value;
+  const currentLatex = targetMode === 'resume' ? resumeLatex.value : clLatex.value;
+  const currentCompError = targetMode === 'resume' ? resumeCompError.value : clCompError.value;
+  const isCurrentlyFixing = targetMode === 'resume' ? isFixingResume.value : isFixingCl.value;
+
+  if (!currentLatex || !currentCompError || isCurrentlyFixing) return;
   
-  isFixing.value = true;
+  if (targetMode === 'resume') isFixingResume.value = true;
+  else isFixingCl.value = true;
+  
   error.value = null;
 
   try {
@@ -440,18 +504,21 @@ const fixWithAi = async () => {
       provider,
       model,
       apiKey,
-      brokenLatex: activeLatex.value,
-      errorLogs: activeCompError.value
+      brokenLatex: currentLatex,
+      errorLogs: currentCompError
     });
 
-    activeLatex.value = fixedCode;
+    if (targetMode === 'resume') resumeLatex.value = fixedCode;
+    else clLatex.value = fixedCode;
+    
     error.value = "AI has suggested a fix. Trying to re-compile...";
-    await compilePdf();
+    await doCompilePdf(targetMode);
   } catch (err: any) {
     console.error("AI Fix Error:", err);
     error.value = `AI Fix failed: ${err.toString()}`;
   } finally {
-    isFixing.value = false;
+    if (targetMode === 'resume') isFixingResume.value = false;
+    else isFixingCl.value = false;
   }
 };
 
@@ -580,25 +647,6 @@ const deleteJob = async () => {
 
 <template>
   <div class="workspace" v-if="!isLoading">
-    <!-- AI Loading Overlay -->
-    <AnimatePresence>
-      <Motion
-        v-if="isGenerating || isFixing || isRefining"
-        :initial="{ opacity: 0 }"
-        :animate="{ opacity: 1 }"
-        :exit="{ opacity: 0 }"
-        class="ai-overlay"
-      >
-        <div class="ai-loader-content">
-          <RotateCw :size="48" class="spinner ai-spinner" />
-          <h2 class="ai-loader-title">
-            {{ isGenerating ? (activeMode === 'resume' ? 'TAILORING RESUME...' : 'CRAFTING COVER LETTER...') : isFixing ? 'DEBUGGING LATEX...' : 'REFINING CONTENT...' }}
-          </h2>
-          <p class="ai-loader-subtitle">The intelligence engine is processing your request.</p>
-        </div>
-      </Motion>
-    </AnimatePresence>
-
     <header class="workspace-header">
       <div class="header-left">
         <div class="btn-tooltip-wrapper" @mouseenter="activeTooltip = 'back'" @mouseleave="activeTooltip = null">
@@ -982,6 +1030,21 @@ const deleteJob = async () => {
 
         <div class="split-pane" ref="splitPaneRef" :class="{ 'is-resizing': isResizingPreview }">
           <div class="editor-container" ref="editorContainer">
+            <!-- AI Loading Overlay (Scoped to the editor so it doesn't block tabs) -->
+            <AnimatePresence>
+              <Motion
+                v-if="isGenerating || isFixing || isRefining"
+                :initial="{ opacity: 0 }"
+                :animate="{ opacity: 1 }"
+                :exit="{ opacity: 0 }"
+                class="loading-overlay"
+              >
+                <div class="loader-content">
+                  <RotateCw :size="32" class="spinner" />
+                  <h3>{{ isGenerating ? (activeMode === 'resume' ? 'TAILORING RESUME...' : 'CRAFTING COVER LETTER...') : isFixing ? 'DEBUGGING...' : 'REFINING...' }}</h3>
+                </div>
+              </Motion>
+            </AnimatePresence>
             <codemirror
               v-if="activeMode === 'resume'"
               v-model="resumeLatex"
@@ -1028,9 +1091,9 @@ const deleteJob = async () => {
             </AnimatePresence>
           </div>
 
-          <div v-if="activePdfUrl" class="preview-resizer" @mousedown="startResizingPreview"></div>
+          <div v-if="activePdfUrl && (activeMode === 'resume' ? isResumeCompiled : isClCompiled)" class="preview-resizer" @mousedown="startResizingPreview"></div>
 
-          <div v-if="activePdfUrl" class="pdf-viewer" :style="{ width: previewWidth + 'px', flex: 'none' }">
+          <div v-if="activePdfUrl && (activeMode === 'resume' ? isResumeCompiled : isClCompiled)" class="pdf-viewer" :style="{ width: previewWidth + 'px', flex: 'none' }">
             <VuePdfEmbed :source="activePdfUrl" class="pdf-embed-component" @error="onPdfError" />
           </div>
         </div>
@@ -1319,43 +1382,32 @@ const deleteJob = async () => {
   to { transform: rotate(360deg); }
 }
 
-.ai-overlay {
-  position: fixed;
+.loading-overlay {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(13, 17, 23, 0.85);
-  backdrop-filter: blur(8px);
-  z-index: 10000;
+  background: rgba(13, 17, 23, 0.9);
+  backdrop-filter: blur(4px);
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.ai-loader-content {
+.loader-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  text-align: center;
+  gap: 12px;
 }
 
-.ai-spinner {
+.loader-content h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--accent);
-}
-
-.ai-loader-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--ink);
   letter-spacing: 0.1em;
-  margin: 0;
-}
-
-.ai-loader-subtitle {
-  font-size: 0.9rem;
-  color: var(--muted);
   margin: 0;
 }
 
