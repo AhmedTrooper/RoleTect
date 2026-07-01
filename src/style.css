@@ -47,6 +47,7 @@ body,
     font-size: var(--font-size);
     font-weight: var(--font-weight);
     font-style: var(--font-style);
+    touch-action: pan-x pan-y;
 }
 
 * {

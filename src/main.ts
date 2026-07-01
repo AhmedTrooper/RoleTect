@@ -16,3 +16,16 @@ import "./style.css";
 
 	app.mount('#app');
 })();
+
+// Prevent global pinch-to-zoom (trackpad and touchscreen) so the app feels native
+document.addEventListener('wheel', (e) => {
+	if (e.ctrlKey) {
+		e.preventDefault();
+	}
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+	if (e.touches.length > 1) {
+		e.preventDefault();
+	}
+}, { passive: false });
