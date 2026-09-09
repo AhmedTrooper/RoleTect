@@ -43,7 +43,7 @@ RoleTect integrates sovereign LLM orchestration with professional TeX typesettin
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️Complete System Architecture
 
 ![RoleTect Architecture Diagram](./assets/RoleTect_Diagram.jpg)
 
