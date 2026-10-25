@@ -12,15 +12,19 @@
 
 ## 🏆 Honors & Awards
 
-<table>
+<table width="100%">
   <tr>
-    <td width="50%" align="center">
-      <h3>🥇 1st Runner Up</h3>
-      <p><b>BrainChild 2.0</b></p>
+    <td width="50%" align="center" style="padding: 16px;">
+      <div style="font-size: 28px; margin-bottom: 6px;">🥇</div>
+      <div style="font-size: 16px; font-weight: bold;">1st Runner Up</div>
+      <div style="font-size: 14px; margin-top: 4px;"><b>BrainChild 2.0</b></div>
+      <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">📅 2026</div>
     </td>
-    <td width="50%" align="center">
-      <h3>🥈 2nd Runner Up</h3>
-      <p><b>Sciblitz 2.0 IEE CUET AI Challenge</b></p>
+    <td width="50%" align="center" style="padding: 16px;">
+      <div style="font-size: 28px; margin-bottom: 6px;">🥈</div>
+      <div style="font-size: 16px; font-weight: bold;">2nd Runner Up</div>
+      <div style="font-size: 14px; margin-top: 4px;"><b>Sciblitz 2.0 IEEE CUET AI Challenge</b></div>
+      <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">📅 2026</div>
     </td>
   </tr>
 </table>
